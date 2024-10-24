@@ -26,13 +26,13 @@ public class AdminController {
         List<Utilisateur> utilisateurs = utilisateurService.getAllUtilisateurs();
         return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
     }
-    @PostMapping("/api/user/create")
+    @PostMapping("/api/admin/user/create")
     public ResponseEntity<Utilisateur> saveUtilisateurs(@RequestBody Utilisateur utilisateur) {
         Utilisateur savedUtilisateur = utilisateurService.saveUtilisateur(utilisateur);
         return new ResponseEntity<>(savedUtilisateur, HttpStatus.CREATED);
     }
 
-    @GetMapping("/api/admin/user/{id}")
+    @GetMapping("/api/user/{id}")
     public ResponseEntity<Utilisateur> getUtilisateurById(@PathVariable Long id) {
         Optional<Utilisateur> utilisateur = utilisateurService.getUtilisateurById(id);
         return utilisateur.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
