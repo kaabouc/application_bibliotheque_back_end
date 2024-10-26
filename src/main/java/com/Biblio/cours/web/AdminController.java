@@ -1,9 +1,17 @@
 package com.Biblio.cours.web;
 
 
+import com.Biblio.cours.dto.BibliothequeDTO;
+import com.Biblio.cours.dto.UtilisateurDTO;
 import com.Biblio.cours.entities.Bibliotheque;
+import com.Biblio.cours.entities.Document;
+import com.Biblio.cours.entities.Type;
 import com.Biblio.cours.entities.Utilisateur;
 import com.Biblio.cours.services.IBibliothequeService;
+import com.Biblio.cours.services.IDocumentService;
+import com.Biblio.cours.services.ITypeService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,22 +19,34 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-@CrossOrigin("http://localhost:3000")
+
+
 @RestController
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.PUT, RequestMethod.OPTIONS})
 public class AdminController {
     @Autowired
     private com.Biblio.cours.services.IUtilisateurService utilisateurService;
     @Autowired
     private IBibliothequeService bibliothequeService;
+    @Autowired
+    private IDocumentService documentService;
 
-    @GetMapping("/api/user/all")
-    public ResponseEntity<List<Utilisateur>> getAllUtilisateurs() {
-        List<Utilisateur> utilisateurs = utilisateurService.getAllUtilisateurs();
-        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
+    @Autowired
+    private ITypeService typeService;
+
+    @GetMapping("/api/user/test")
+    public ResponseEntity<String> testSerialization() throws JsonProcessingException {
+        Utilisateur user = utilisateurService.getAllUtilisateurs().get(0);
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(user);
+        return new ResponseEntity<>(json, HttpStatus.OK);
     }
-    @PostMapping("/api/admin/user/create")
+
+    @PostMapping("/api/user/create")
     public ResponseEntity<Utilisateur> saveUtilisateurs(@RequestBody Utilisateur utilisateur) {
         Utilisateur savedUtilisateur = utilisateurService.saveUtilisateur(utilisateur);
         return new ResponseEntity<>(savedUtilisateur, HttpStatus.CREATED);
@@ -74,11 +94,31 @@ public class AdminController {
         return new ResponseEntity<>(savedBibliotheque, HttpStatus.CREATED);
     }
 
-    // Get all Bibliotheques
     @GetMapping("/api/admin/bibliotique/all")
-    public ResponseEntity<List<Bibliotheque>> getAllBibliotheques() {
+    public ResponseEntity<List<BibliothequeDTO>> getAllBibliotheques() {
         List<Bibliotheque> bibliotheques = bibliothequeService.getAllBibliotheques();
-        return new ResponseEntity<>(bibliotheques, HttpStatus.OK);
+        List<BibliothequeDTO> dtos = bibliotheques.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(dtos, HttpStatus.OK);
+    }
+
+    @GetMapping("/api/user/all")
+    public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
+        List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
+                .stream()
+                .map(UtilisateurDTO::new)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
+    }
+
+    private BibliothequeDTO convertToDTO(Bibliotheque bibliotheque) {
+        BibliothequeDTO dto = new BibliothequeDTO();
+        dto.setId(bibliotheque.getId());
+        dto.setNom(bibliotheque.getNom());
+        dto.setLocation(bibliotheque.getLocation());
+        dto.setDocumentsCount(bibliotheque.getDocuments().size());
+        return dto;
     }
 
     // Get Bibliotheque by ID
@@ -89,10 +129,89 @@ public class AdminController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    @GetMapping("/api/admin/document/all")
+    public ResponseEntity<List<Document>> getAllDocuments() {
+        List<Document> documents = documentService.getAllDocuments();
+        return new ResponseEntity<>(documents, HttpStatus.OK);
+    }
     // Delete Bibliotheque by ID
     @DeleteMapping("/api/admin/bibliotique/delete/{id}")
     public ResponseEntity<Void> deleteBibliotheque(@PathVariable Long id) {
         bibliothequeService.deleteBibliotheque(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/api/admin/document/user/{userId}")
+    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
+        List<Document> documents = documentService.getDocumentsByUserId(userId);
+        return ResponseEntity.ok(documents);
+    }
+    @GetMapping("/api/admin/users/{email}")
+    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
+        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
+        return ResponseEntity.ok(user);
+    }
+    @DeleteMapping("/api/admin/document/delete/{id}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        documentService.deleteDocument(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping("/api/admin/bibliotique/update/{id}")
+    public ResponseEntity<Bibliotheque> updateBibliotheque(@PathVariable Long id,
+                                                           @RequestParam(required = false) String nom,
+                                                           @RequestParam(required = false) String location) {
+        Optional<Bibliotheque> optionalBibliotheque = bibliothequeService.getBibliothequeById(id);
+
+        if (!optionalBibliotheque.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Bibliotheque bibliotheque = optionalBibliotheque.get();
+
+        // Update fields if provided
+        if (nom != null) bibliotheque.setNom(nom);
+        if (location != null) bibliotheque.setLocation(location);
+
+
+
+        // Save updated bibliotheque
+        Bibliotheque updatedBibliotheque = bibliothequeService.saveBibliotheque(bibliotheque);
+        return new ResponseEntity<>(updatedBibliotheque, HttpStatus.OK);
+    }
+
+    @PostMapping
+    public ResponseEntity<Type> createType(@RequestBody Type type) {
+        Type savedType = typeService.saveType(type);
+        return new ResponseEntity<>(savedType, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/api/admin/type/{id}")
+    public ResponseEntity<Type> updateType(@PathVariable Long id, @RequestBody Type type) {
+        try {
+            Type updatedType = typeService.editType(id, type);
+            return new ResponseEntity<>(updatedType, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+
+
+    @GetMapping("/api/admin/type/{id}")
+    public ResponseEntity<Type> getTypeById(@PathVariable Long id) {
+        Optional<Type> type = typeService.getTypeById(id);
+        return type.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @DeleteMapping("/api/admin/type/{id}")
+    public ResponseEntity<Void> deleteType(@PathVariable Long id) {
+        try {
+            typeService.deleteType(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

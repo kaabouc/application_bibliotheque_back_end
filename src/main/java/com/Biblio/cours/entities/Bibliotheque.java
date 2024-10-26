@@ -1,5 +1,7 @@
 package com.Biblio.cours.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +22,8 @@ public class Bibliotheque {
     private String location;
 
     @OneToMany(mappedBy = "bibliotheque", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference // Add this annotation
+    @JsonIgnore
     private List<Document> documents;
 
     public Bibliotheque() {

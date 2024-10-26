@@ -1,6 +1,8 @@
 package com.Biblio.cours.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +12,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@Data
 public class Type {
 
     @jakarta.persistence.Id
@@ -20,6 +23,7 @@ public class Type {
     private  String subtitle;
     private  String description;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "type", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Document> documents;
 
@@ -38,6 +42,5 @@ public class Type {
         return id;
     }
 
-    // Getters and Setters
 }
 

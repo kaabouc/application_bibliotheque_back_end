@@ -3,10 +3,13 @@ package com.Biblio.cours.services;
 
 
 import com.Biblio.cours.dao.DocumentDAO;
+import com.Biblio.cours.dao.UtilisateurDAO;
 import com.Biblio.cours.entities.Document;
 
+import com.Biblio.cours.entities.Utilisateur;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,6 +29,9 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Value("${file.upload-dir}")
     private String uploadDirectory;
+
+    @Autowired
+    private UtilisateurDAO utilisateurDAO;
 
     @Override
     public Document saveDocument(Document document, MultipartFile file) {
@@ -57,8 +63,17 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public List<Document> getAllDocuments() {
-        return documentDao.findAll();
+        List<Document> documents = documentDao.findAll();
+        System.out.println("Documents retrieved from the database: " + documents);
+        return documents;
     }
+    @Override
+    public List<Document> getDocumentsByUserId(Long userId) {
+        Utilisateur user = utilisateurDAO.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return documentDao.findDocumentByUtilisateur(user);
+    }
+
 
     @Override
     public Optional<Document> getDocumentById(Long id) {

@@ -1,6 +1,9 @@
 package com.Biblio.cours.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,16 +47,21 @@ public class Document {
 
     @ManyToOne
     @JoinColumn(name = "bibliotheque_id", nullable = false)
+    @JsonBackReference
     private Bibliotheque bibliotheque;
 
     @ManyToOne
     @JoinColumn(name = "type_id", nullable = false)
+    @JsonIgnore
     private Type type;
 
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @JsonIgnore
     private List<Commentaire> commentaires;
     @ManyToOne
-    @JoinColumn(name = "utilisateur_id")
+    @JoinColumn
+    @JsonIgnore
     private Utilisateur utilisateur;
 
     // Constructors, Getters, and Setters

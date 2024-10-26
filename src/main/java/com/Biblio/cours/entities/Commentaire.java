@@ -1,5 +1,7 @@
 package com.Biblio.cours.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,11 +18,14 @@ public class Commentaire {
     private String message;
 
     @ManyToOne
+    @JsonBackReference
     @JoinColumn(name = "document_id", nullable = false)
+    @JsonIgnore
     private Document document;
 
     @ManyToOne
     @JoinColumn(name = "utilisateur_id", nullable = false)
+    @JsonIgnore
     private Utilisateur utilisateur;
 
     // Constructors, Getters, and Setters

@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface IDocumentService {
     // Create or Update Document
+
     Document saveDocument(Document document, MultipartFile file);
 
     // Get all Documents
@@ -20,5 +21,7 @@ public interface IDocumentService {
 
     // Delete Document by ID
     void deleteDocument(Long id);
+
+    public List<Document> getDocumentsByUserId(Long userId);
 }
 

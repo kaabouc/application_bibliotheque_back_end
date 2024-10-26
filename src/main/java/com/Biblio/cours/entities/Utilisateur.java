@@ -1,6 +1,7 @@
 package com.Biblio.cours.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,15 +20,17 @@ public class Utilisateur {
 
     private String nom;
     private String email;
-    private String type; // Admin, Client, etc.
+    private String type ; // Admin, Client, etc.
     private String password;
 
     @Lob
     private byte[] image; // To store profile image as a blob
 
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Commentaire> commentaires;
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Document> documents;
 
 
@@ -50,5 +53,4 @@ public class Utilisateur {
         return id;
     }
 
-    // Getters and Setters
 }

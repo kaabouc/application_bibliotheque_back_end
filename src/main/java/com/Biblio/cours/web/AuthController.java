@@ -40,6 +40,7 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Utilisateur utilisateur) {
         // Check if user already exists
@@ -50,12 +51,14 @@ public class AuthController {
         // Encode password
         utilisateur.setPassword(passwordEncoder.encode(utilisateur.getPassword()));
 
+
         // Définir le type par défaut "CLIENT"
         String typeUtilisateur = utilisateur.getType();
         if (typeUtilisateur == null || typeUtilisateur.isEmpty()) {
             typeUtilisateur = "CLIENT";
         }
         utilisateur.setType(typeUtilisateur);
+
         Utilisateur savedUtilisateur = utilisateurService.saveUtilisateur(utilisateur);
 
         return ResponseEntity.ok(savedUtilisateur);
