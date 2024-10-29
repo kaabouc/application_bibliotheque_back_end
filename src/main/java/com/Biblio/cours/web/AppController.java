@@ -9,11 +9,19 @@ import com.Biblio.cours.dto.BibliothequeDTO;
 import com.Biblio.cours.entities.*;
 import com.Biblio.cours.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,6 +45,9 @@ public class AppController {
     private TypeDAO typeDAO;
     @Autowired
     private UtilisateurDAO utilisateurDAO;
+    @Value("${file.upload-dir}")
+    private String DOCUMENTS_DIR ;
+
 
     @Autowired
     private ITypeService typeService;
@@ -172,6 +183,34 @@ public class AppController {
         }
     }
 
+    @GetMapping("/uploads/documents/{idDocs}")
+    public ResponseEntity<UrlResource> downloadDocument(@PathVariable String idDocs) {
+        try {
+            // Construire le chemin du fichier
+            Path filePath = Paths.get(DOCUMENTS_DIR).resolve(idDocs).normalize();
+            UrlResource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Obtenir le type MIME du fichier
+                String contentType = Files.probeContentType(filePath);
+                if (contentType == null) {
+                    contentType = "application/octet-stream"; // Type par défaut si non déterminé
+                }
+
+                // Retourner le fichier en tant que ressource téléchargeable
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filePath.getFileName().toString() + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
 
     @GetMapping("/api/type/all")
     public ResponseEntity<List<Type>> getAllTypes() {
