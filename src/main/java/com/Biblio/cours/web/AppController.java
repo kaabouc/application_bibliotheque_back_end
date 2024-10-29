@@ -5,6 +5,7 @@ package com.Biblio.cours.web;
 import com.Biblio.cours.dao.BibliothequeDAO;
 import com.Biblio.cours.dao.TypeDAO;
 import com.Biblio.cours.dao.UtilisateurDAO;
+import com.Biblio.cours.dto.BibliothequeDTO;
 import com.Biblio.cours.entities.*;
 import com.Biblio.cours.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @CrossOrigin("http://localhost:3000")
 @RestController
@@ -78,12 +80,31 @@ public class AppController {
 
         return new ResponseEntity<>(savedDocument, HttpStatus.CREATED);
     }
-
+    @DeleteMapping("/api/bibliotique/delete/{id}")
+    public ResponseEntity<Void> deleteBibliotheque(@PathVariable Long id) {
+        bibliothequeService.deleteBibliotheque(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 
     // Get all Documents
 
 
-
+    @GetMapping("/api/bibliotique/all")
+    public ResponseEntity<List<BibliothequeDTO>> getAllBibliotheques() {
+        List<Bibliotheque> bibliotheques = bibliothequeService.getAllBibliotheques();
+        List<BibliothequeDTO> dtos = bibliotheques.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(dtos, HttpStatus.OK);
+    }
+    private BibliothequeDTO convertToDTO(Bibliotheque bibliotheque) {
+        BibliothequeDTO dto = new BibliothequeDTO();
+        dto.setId(bibliotheque.getId());
+        dto.setNom(bibliotheque.getNom());
+        dto.setLocation(bibliotheque.getLocation());
+        dto.setDocumentsCount(bibliotheque.getDocuments().size());
+        return dto;
+    }
     // Get Document by ID
     @GetMapping("/api/document/{id}")
     public ResponseEntity<Document> getDocumentById(@PathVariable Long id) {
