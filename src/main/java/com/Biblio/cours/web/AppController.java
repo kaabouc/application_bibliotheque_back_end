@@ -55,7 +55,7 @@ public class AppController {
             @RequestParam("bibliothequeId") Long bibliothequeId,
             @RequestParam("typeId") Long typeId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("userid") Long userId
+            @RequestParam("userId") Long userId
     ) {
         // Find related entities using their services
         Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
@@ -114,7 +114,7 @@ public class AppController {
             @RequestParam("bibliothequeId") Long bibliothequeId,
             @RequestParam("typeId") Long typeId,
             @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam("userid") Long userId
+            @RequestParam("userId") Long userId
     ) {
         try {
             // Vérifier si le document existe
