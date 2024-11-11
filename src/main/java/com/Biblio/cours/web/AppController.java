@@ -59,38 +59,7 @@ public class AppController {
     }
 
     // Create or Update Document
-    @PostMapping("/api/document/save")
-    public ResponseEntity<Document> saveDocument(
-            @RequestParam("titre") String titre,
-            @RequestParam("description") String description,
-            @RequestParam("filier") String filier,
-            @RequestParam("niveaux") String niveaux,
-            @RequestParam("bibliothequeId") Long bibliothequeId,
-            @RequestParam("typeId") Long typeId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("userId") Long userId
-    ) {
-        // Find related entities using their services
-        Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
-        Optional<Type> type = typeDAO.findById(typeId);
-        Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
-
-        // Create a new Document instance and set its properties
-        Document document = new Document();
-        document.setTitre(titre);
-        document.setDescription(description);
-        document.setFilier(filier);
-        document.setNiveaux(niveaux);
-        document.setBibliotheque(bibliotheque.get()); // Set the bibliotheque
-        document.setType(type.get()); // Set the type
-        document.setUtilisateur(utilisateur.get());
-
-        // Save the document using the service
-        Document savedDocument = documentService.saveDocument(document, file);
-
-        return new ResponseEntity<>(savedDocument, HttpStatus.CREATED);
-    }
     @DeleteMapping("/api/bibliotique/delete/{id}")
     public ResponseEntity<Void> deleteBibliotheque(@PathVariable Long id) {
         bibliothequeService.deleteBibliotheque(id);
@@ -116,6 +85,12 @@ public class AppController {
         dto.setDocumentsCount(bibliotheque.getDocuments().size());
         return dto;
     }
+    @GetMapping("/api/users/{email}")
+    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
+        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
+        return ResponseEntity.ok(user);
+    }
+
     // Get Document by ID
     @GetMapping("/api/document/{id}")
     public ResponseEntity<Document> getDocumentById(@PathVariable Long id) {
@@ -124,10 +99,10 @@ public class AppController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @GetMapping("/api/users/{email}")
-    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
-        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
-        return ResponseEntity.ok(user);
+    @GetMapping("/api/auth/document/all")
+    public ResponseEntity<List<Document>> getAllDocuments() {
+        List<Document> documents = documentService.getAllDocuments();
+        return new ResponseEntity<>(documents, HttpStatus.OK);
     }
 
     // Delete Document by ID
@@ -181,6 +156,11 @@ public class AppController {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+    @GetMapping("/api/document/user/{userId}")
+    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
+        List<Document> documents = documentService.getDocumentsByUserId(userId);
+        return ResponseEntity.ok(documents);
     }
 
     @GetMapping("/uploads/documents/{idDocs}")
@@ -244,11 +224,7 @@ public class AppController {
         return commentaireService.updateCommentaire(id, updatedCommentaire);
     }
 
-    @GetMapping("/api/document/user/{userId}")
-    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
-        List<Document> documents = documentService.getDocumentsByUserId(userId);
-        return ResponseEntity.ok(documents);
-    }
+
 
 
 

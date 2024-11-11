@@ -100,12 +100,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-<dependency>
-    <groupId>io.github.bonigarcia</groupId>
-    <artifactId>webdrivermanager</artifactId>
-    <version>5.4.3</version> <!-- Assurez-vous que cette version est la plus récente ou compatible -->
-</dependency>
-
 
 	</dependencies>
 

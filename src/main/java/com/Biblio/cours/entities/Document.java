@@ -52,7 +52,7 @@ public class Document {
 
     @ManyToOne
     @JoinColumn(name = "type_id", nullable = false)
-    @JsonIgnore
+//    @JsonIgnore
     private Type type;
 
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -84,6 +84,9 @@ public class Document {
         return id;
     }
 
-    // Getters and Setters
+    public Document(Long id, String titre) {
+        this.id = id;
+        this.titre = titre;
+    }
 }
 
