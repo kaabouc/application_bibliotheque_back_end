@@ -5,7 +5,7 @@ FROM tomcat:9-jdk17
 RUN rm -rf /usr/local/tomcat/webapps/*
 
 # Copy the WAR file to the Tomcat webapps directory
-COPY target/cours-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/
+COPY target/cours-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
 
 # Expose the default Tomcat port
 EXPOSE 8080
