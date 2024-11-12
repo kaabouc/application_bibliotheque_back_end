@@ -100,7 +100,7 @@ public class AdminController {
     public ResponseEntity<Bibliotheque> saveBibliotheque(@RequestBody Bibliotheque bibliotheque) {
         Bibliotheque savedBibliotheque = bibliothequeService.saveBibliotheque(bibliotheque);
         return new ResponseEntity<>(savedBibliotheque, HttpStatus.CREATED);
-    }
+     }
 
     @GetMapping("/api/admin/bibliotique/all")
     public ResponseEntity<List<BibliothequeDTO>> getAllBibliotheques() {

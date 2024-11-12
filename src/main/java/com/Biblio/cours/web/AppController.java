@@ -196,40 +196,6 @@ public class AppController {
         }
     }
 
-    @PostMapping("/api/document/save")
-    public ResponseEntity<Document> saveDocument(
-            @RequestParam("titre") String titre,
-            @RequestParam("description") String description,
-            @RequestParam("filier") String filier,
-            @RequestParam("niveaux") String niveaux,
-            @RequestParam("bibliothequeId") Long bibliothequeId,
-            @RequestParam("typeId") Long typeId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("userId") Long userId
-    ) {
-        // Find related entities using their services
-        Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
-        Optional<Type> type = typeDAO.findById(typeId);
-        Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
-
-
-        // Create a new Document instance and set its properties
-        Document document = new Document();
-        document.setTitre(titre);
-        document.setDescription(description);
-        document.setFilier(filier);
-        document.setNiveaux(niveaux);
-        document.setBibliotheque(bibliotheque.get()); // Set the bibliotheque
-        document.setType(type.get()); // Set the type
-        document.setUtilisateur(utilisateur.get());
-
-        // Save the document using the service
-        Document savedDocument = documentService.saveDocument(document, file);
-
-        return new ResponseEntity<>(savedDocument, HttpStatus.CREATED);
-    }
-
-
     @GetMapping("/api/document/user/{userId}")
     public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
         List<Document> documents = documentService.getDocumentsByUserId(userId);
