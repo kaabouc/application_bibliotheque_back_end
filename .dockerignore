@@ -1,0 +1,5 @@
+target/
+
+# Ignore local files that shouldn't be copied into the image
+*.log
+.git/
