@@ -7,6 +7,9 @@ import com.Biblio.cours.dao.UtilisateurDAO;
 import com.Biblio.cours.entities.Document;
 
 import com.Biblio.cours.entities.Utilisateur;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.User;
@@ -32,6 +35,9 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Autowired
     private UtilisateurDAO utilisateurDAO;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public Document saveDocument(Document document, MultipartFile file) {
@@ -92,6 +98,29 @@ public class DocumentServiceImpl implements IDocumentService {
             }
             documentDao.deleteById(id);
         }
+    }
+
+    @Override
+    public List<Document> searchDocuments(String titre, String description, String filier, String niveaux, Long bibliothequeId, Long typeId) {
+        String query = "SELECT d FROM Document d WHERE 1=1";
+
+        if (titre != null) query += " AND d.titre LIKE :titre";
+        if (description != null) query += " AND d.description LIKE :description";
+        if (filier != null) query += " AND d.filier = :filier";
+        if (niveaux != null) query += " AND d.niveaux = :niveaux";
+        if (bibliothequeId != null) query += " AND d.bibliotheque.id = :bibliothequeId";
+        if (typeId != null) query += " AND d.type.id = :typeId";
+
+        TypedQuery<Document> typedQuery = entityManager.createQuery(query, Document.class);
+
+        if (titre != null) typedQuery.setParameter("titre", "%" + titre + "%");
+        if (description != null) typedQuery.setParameter("description", "%" + description + "%");
+        if (filier != null) typedQuery.setParameter("filier", filier);
+        if (niveaux != null) typedQuery.setParameter("niveaux", niveaux);
+        if (bibliothequeId != null) typedQuery.setParameter("bibliothequeId", bibliothequeId);
+        if (typeId != null) typedQuery.setParameter("typeId", typeId);
+
+        return typedQuery.getResultList();
     }
 }
 
