@@ -87,6 +87,14 @@ public class AdminController {
         utilisateurService.deleteUtilisateur(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+    @GetMapping("/api/user/all")
+    public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
+        List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
+                .stream()
+                .map(UtilisateurDTO::new)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
+    }
     // Create or Update Bibliotheque
     @PostMapping("/api/admin/bibliotique/save")
     public ResponseEntity<Bibliotheque> saveBibliotheque(@RequestBody Bibliotheque bibliotheque) {
@@ -103,14 +111,7 @@ public class AdminController {
         return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
 
-    @GetMapping("/api/user/all")
-    public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
-        List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
-                .stream()
-                .map(UtilisateurDTO::new)
-                .collect(Collectors.toList());
-        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
-    }
+
 
     private BibliothequeDTO convertToDTO(Bibliotheque bibliotheque) {
         BibliothequeDTO dto = new BibliothequeDTO();
@@ -129,34 +130,13 @@ public class AdminController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @GetMapping("/api/admin/document/all")
-    public ResponseEntity<List<Document>> getAllDocuments() {
-        List<Document> documents = documentService.getAllDocuments();
-        return new ResponseEntity<>(documents, HttpStatus.OK);
-    }
+
     // Delete Bibliotheque by ID
     @DeleteMapping("/api/admin/bibliotique/delete/{id}")
     public ResponseEntity<Void> deleteBibliotheque(@PathVariable Long id) {
         bibliothequeService.deleteBibliotheque(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-
-    @GetMapping("/api/admin/document/user/{userId}")
-    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
-        List<Document> documents = documentService.getDocumentsByUserId(userId);
-        return ResponseEntity.ok(documents);
-    }
-    @GetMapping("/api/admin/users/{email}")
-    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
-        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
-        return ResponseEntity.ok(user);
-    }
-    @DeleteMapping("/api/admin/document/delete/{id}")
-    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
-        documentService.deleteDocument(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
     @PutMapping("/api/admin/bibliotique/update/{id}")
     public ResponseEntity<Bibliotheque> updateBibliotheque(@PathVariable Long id,
                                                            @RequestParam(required = false) String nom,
@@ -179,6 +159,28 @@ public class AdminController {
         Bibliotheque updatedBibliotheque = bibliothequeService.saveBibliotheque(bibliotheque);
         return new ResponseEntity<>(updatedBibliotheque, HttpStatus.OK);
     }
+    @GetMapping("/api/admin/document/all")
+    public ResponseEntity<List<Document>> getAllDocuments() {
+        List<Document> documents = documentService.getAllDocuments();
+        return new ResponseEntity<>(documents, HttpStatus.OK);
+    }
+    @GetMapping("/api/admin/document/user/{userId}")
+    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
+        List<Document> documents = documentService.getDocumentsByUserId(userId);
+        return ResponseEntity.ok(documents);
+    }
+    @GetMapping("/api/admin/users/{email}")
+    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
+        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
+        return ResponseEntity.ok(user);
+    }
+    @DeleteMapping("/api/admin/document/delete/{id}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        documentService.deleteDocument(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+
 
     @PostMapping
     public ResponseEntity<Type> createType(@RequestBody Type type) {
