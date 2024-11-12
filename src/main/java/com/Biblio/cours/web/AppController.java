@@ -195,6 +195,7 @@ public class AppController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+<<<<<<< HEAD
     @PostMapping("/api/document/save")
     public ResponseEntity<Document> saveDocument(
             @RequestParam("titre") String titre,
@@ -227,6 +228,8 @@ public class AppController {
 
         return new ResponseEntity<>(savedDocument, HttpStatus.CREATED);
     }
+=======
+>>>>>>> 8014d5e0f3e1e538144c6e11cbf247a828658773
 
     @GetMapping("/api/document/user/{userId}")
     public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
