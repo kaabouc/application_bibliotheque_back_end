@@ -252,11 +252,7 @@ public class AppController {
         return new ResponseEntity<>(commentaires, HttpStatus.OK);
     }
 
-    @DeleteMapping("/api/comentaire/delete/{id}")
-    public ResponseEntity<String> deleteCommentaire(@PathVariable Long id) {
-        commentaireService.deleteCommentaire(id);
-        return new ResponseEntity<>("Commentaire supprimé avec succès!", HttpStatus.OK);
-    }
+
 
     @PutMapping("/api/comentaire/update/{id}")
     public ResponseEntity<Commentaire> updateCommentaire(
@@ -264,6 +260,70 @@ public class AppController {
             @RequestBody Commentaire updatedCommentaire) {
         Commentaire commentaire = commentaireService.updateCommentaire(id, updatedCommentaire);
         return new ResponseEntity<>(commentaire, HttpStatus.OK);
+    }
+
+    @PostMapping("/api/commentaire/create")
+    public ResponseEntity<Commentaire> createCommentaire(
+            @RequestParam("message") String message,
+            @RequestParam("documentId") Long documentId,
+            @RequestParam("userId") Long userId) {
+
+        Optional<Document> document = documentService.getDocumentById(documentId);
+        Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
+
+        if (!document.isPresent() || !utilisateur.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        Commentaire commentaire = new Commentaire();
+        commentaire.setMessage(message);
+        commentaire.setDocument(document.get());
+        commentaire.setUtilisateur(utilisateur.get());
+
+        Commentaire savedCommentaire = commentaireService.saveCommentaire(commentaire);
+        return new ResponseEntity<>(savedCommentaire, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/api/commentaire/update/{id}")
+    public ResponseEntity<Commentaire> updateCommentaire(
+            @PathVariable Long id,
+            @RequestParam("message") String message,
+            @RequestParam("documentId") Long documentId,
+            @RequestParam("userId") Long userId) {
+
+        Optional<Commentaire> existingCommentaire = commentaireService.findById(id);
+        Optional<Document> document = documentService.getDocumentById(documentId);
+        Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
+
+        if (!existingCommentaire.isPresent() || !document.isPresent() || !utilisateur.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        Commentaire commentaire = existingCommentaire.get();
+        commentaire.setMessage(message);
+        commentaire.setDocument(document.get());
+        commentaire.setUtilisateur(utilisateur.get());
+
+        Commentaire updatedCommentaire = commentaireService.saveCommentaire(commentaire);
+        return new ResponseEntity<>(updatedCommentaire, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/api/commentaire/delete/{id}")
+    public ResponseEntity<Void> deleteCommentaire(@PathVariable Long id) {
+        Optional<Commentaire> commentaire = commentaireService.findById(id);
+
+        if (!commentaire.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        commentaireService.deleteCommentaire(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/api/commentaire/document/{documentId}")
+    public ResponseEntity<List<Commentaire>> getCommentairesByDocument(@PathVariable Long documentId) {
+        List<Commentaire> commentaires = commentaireService.getCommentairesByDocumentId(documentId);
+        return new ResponseEntity<>(commentaires, HttpStatus.OK);
     }
 
 
