@@ -40,28 +40,26 @@ public class DocumentServiceImpl implements IDocumentService {
     private EntityManager entityManager;
 
     @Override
-    public Document saveDocument(Document document, MultipartFile file) {
-        if (file != null && !file.isEmpty()) {
-            try {
-                // Create a unique filename
-                String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-                String filePath = uploadDirectory + File.separator + fileName; // Use File.separator for cross-platform compatibility
+    public Document saveDocument(Document document) {
 
-                // Ensure the upload directory exists
-                Files.createDirectories(Paths.get(uploadDirectory));
-
-                // Save the file to the specified directory
-                file.transferTo(new File(filePath));
 
                 // Set the file path to the document entity
-                document.setFilePath(filePath);
+
                 document.setDislike(0);
                 document.setLikes(0);
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException("Failed to store the file.");
-            }
-        }
+
+
+
+        // Save the document entity in the database
+        return documentDao.save(document);
+    }
+    @Override
+    public Document UpdateDocument(Document document) {
+
+
+
+
+
 
         // Save the document entity in the database
         return documentDao.save(document);
