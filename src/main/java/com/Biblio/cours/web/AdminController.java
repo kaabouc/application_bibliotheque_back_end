@@ -182,7 +182,7 @@ public class AdminController {
 
 
 
-    @PostMapping
+    @PostMapping("/api/admin/type")
     public ResponseEntity<Type> createType(@RequestBody Type type) {
         Type savedType = typeService.saveType(type);
         return new ResponseEntity<>(savedType, HttpStatus.CREATED);
@@ -198,7 +198,11 @@ public class AdminController {
         }
     }
 
-
+    @GetMapping("/api/admin/type")
+    public ResponseEntity<List<Type>> getAllTypes() {
+        List<Type> types = typeService.getAllTypes();
+        return new ResponseEntity<>(types, HttpStatus.OK);
+    }
 
     @GetMapping("/api/admin/type/{id}")
     public ResponseEntity<Type> getTypeById(@PathVariable Long id) {
@@ -215,5 +219,22 @@ public class AdminController {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/api/admin/user/search")
+    public List<Utilisateur> searchByNomOrEmail(@RequestParam String keyword) {
+        return utilisateurService.searchByNomOrEmail(keyword);
+    }
+
+    // Filter by type
+    @GetMapping("/api/admin/user/filter")
+    public List<Utilisateur> filterByType(@RequestParam String type) {
+        return utilisateurService.filterByType(type);
+    }
+
+    // Search by name or email and filter by type
+    @GetMapping("/api/admin/user/search-filter")
+    public List<Utilisateur> searchByNomOrEmailAndType(@RequestParam String keyword, @RequestParam String type) {
+        return utilisateurService.searchByNomOrEmailAndType(keyword, type);
     }
 }

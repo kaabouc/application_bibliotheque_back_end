@@ -1,27 +1,27 @@
-# Use the Maven image to build the app
-FROM maven:3.8.4-openjdk-17-slim AS build
+# Étape 1 : Construction de l'application
+FROM maven:3.9.0-eclipse-temurin-17 AS builder
 
-# Set the working directory
+# Définir le répertoire de travail
 WORKDIR /app
 
-# Copy the pom.xml and other necessary files
+# Copier les fichiers nécessaires pour le build
 COPY pom.xml .
 COPY src ./src
 
-# Run Maven to build the project and generate the WAR file
-RUN mvn clean package
+# Construire le projet Maven
+RUN mvn clean package -DskipTests
 
-# Use the Tomcat image to run the WAR file
-FROM tomcat:9-jdk17
+# Étape 2 : Création de l'image exécutable
+FROM eclipse-temurin:17-jdk-alpine
 
-# Remove the default webapps
-RUN rm -rf /usr/local/tomcat/webapps/*
+# Définir le répertoire de travail
+WORKDIR /app
 
-# Copy the WAR file from the build stage to the Tomcat webapps directory
-COPY --from=build /app/target/cours-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
+# Copier le fichier JAR de l'étape de construction
+COPY --from=builder target/cours-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose the default Tomcat port
+# Exposer le port par défaut de Spring Boot
 EXPOSE 8080
 
-# Start Tomcat
-CMD ["catalina.sh", "run"]
+# Commande pour exécuter l'application
+ENTRYPOINT ["java", "-jar", "app.jar"]

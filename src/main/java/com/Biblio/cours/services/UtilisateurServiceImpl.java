@@ -40,5 +40,17 @@ public class UtilisateurServiceImpl implements com.Biblio.cours.services.IUtilis
     public Optional<Utilisateur> getUtilisateurByEmail(String email) {
         return utilisateurDao.findByEmail(email);
     }
+    @Override
+    public List<Utilisateur> searchByNomOrEmail(String keyword) {
+        return utilisateurDao.findByNomContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+    }
+    @Override
+    public List<Utilisateur> filterByType(String type) {
+        return utilisateurDao.findByType(type);
+    }
+    @Override
+    public List<Utilisateur> searchByNomOrEmailAndType(String keyword, String type) {
+        return utilisateurDao.findByNomContainingIgnoreCaseOrEmailContainingIgnoreCaseAndType(keyword, keyword, type);
+    }
 }
 
