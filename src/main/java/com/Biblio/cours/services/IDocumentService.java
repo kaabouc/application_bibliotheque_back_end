@@ -11,8 +11,9 @@ import java.util.Optional;
 public interface IDocumentService {
     // Create or Update Document
 
-    Document saveDocument(Document document, MultipartFile file);
+    Document saveDocument(Document document);
 
+     Document UpdateDocument(Document document);
     // Get all Documents
     List<Document> getAllDocuments();
 
