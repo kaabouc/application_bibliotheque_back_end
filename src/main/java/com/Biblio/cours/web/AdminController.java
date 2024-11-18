@@ -87,12 +87,20 @@ public class AdminController {
         utilisateurService.deleteUtilisateur(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+    @GetMapping("/api/user/all")
+    public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
+        List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
+                .stream()
+                .map(UtilisateurDTO::new)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
+    }
     // Create or Update Bibliotheque
     @PostMapping("/api/admin/bibliotique/save")
     public ResponseEntity<Bibliotheque> saveBibliotheque(@RequestBody Bibliotheque bibliotheque) {
         Bibliotheque savedBibliotheque = bibliothequeService.saveBibliotheque(bibliotheque);
         return new ResponseEntity<>(savedBibliotheque, HttpStatus.CREATED);
-    }
+     }
 
     @GetMapping("/api/admin/bibliotique/all")
     public ResponseEntity<List<BibliothequeDTO>> getAllBibliotheques() {
@@ -103,14 +111,7 @@ public class AdminController {
         return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
 
-    @GetMapping("/api/user/all")
-    public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
-        List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
-                .stream()
-                .map(UtilisateurDTO::new)
-                .collect(Collectors.toList());
-        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
-    }
+
 
     private BibliothequeDTO convertToDTO(Bibliotheque bibliotheque) {
         BibliothequeDTO dto = new BibliothequeDTO();
@@ -129,34 +130,13 @@ public class AdminController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @GetMapping("/api/admin/document/all")
-    public ResponseEntity<List<Document>> getAllDocuments() {
-        List<Document> documents = documentService.getAllDocuments();
-        return new ResponseEntity<>(documents, HttpStatus.OK);
-    }
+
     // Delete Bibliotheque by ID
     @DeleteMapping("/api/admin/bibliotique/delete/{id}")
     public ResponseEntity<Void> deleteBibliotheque(@PathVariable Long id) {
         bibliothequeService.deleteBibliotheque(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-
-    @GetMapping("/api/admin/document/user/{userId}")
-    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
-        List<Document> documents = documentService.getDocumentsByUserId(userId);
-        return ResponseEntity.ok(documents);
-    }
-    @GetMapping("/api/admin/users/{email}")
-    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
-        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
-        return ResponseEntity.ok(user);
-    }
-    @DeleteMapping("/api/admin/document/delete/{id}")
-    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
-        documentService.deleteDocument(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
     @PutMapping("/api/admin/bibliotique/update/{id}")
     public ResponseEntity<Bibliotheque> updateBibliotheque(@PathVariable Long id,
                                                            @RequestParam(required = false) String nom,
@@ -179,8 +159,30 @@ public class AdminController {
         Bibliotheque updatedBibliotheque = bibliothequeService.saveBibliotheque(bibliotheque);
         return new ResponseEntity<>(updatedBibliotheque, HttpStatus.OK);
     }
+    @GetMapping("/api/admin/document/all")
+    public ResponseEntity<List<Document>> getAllDocuments() {
+        List<Document> documents = documentService.getAllDocuments();
+        return new ResponseEntity<>(documents, HttpStatus.OK);
+    }
+    @GetMapping("/api/admin/document/user/{userId}")
+    public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
+        List<Document> documents = documentService.getDocumentsByUserId(userId);
+        return ResponseEntity.ok(documents);
+    }
+    @GetMapping("/api/admin/users/{email}")
+    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
+        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
+        return ResponseEntity.ok(user);
+    }
+    @DeleteMapping("/api/admin/document/delete/{id}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        documentService.deleteDocument(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 
-    @PostMapping
+
+
+    @PostMapping("/api/admin/type")
     public ResponseEntity<Type> createType(@RequestBody Type type) {
         Type savedType = typeService.saveType(type);
         return new ResponseEntity<>(savedType, HttpStatus.CREATED);
@@ -196,7 +198,11 @@ public class AdminController {
         }
     }
 
-
+    @GetMapping("/api/admin/type")
+    public ResponseEntity<List<Type>> getAllTypes() {
+        List<Type> types = typeService.getAllTypes();
+        return new ResponseEntity<>(types, HttpStatus.OK);
+    }
 
     @GetMapping("/api/admin/type/{id}")
     public ResponseEntity<Type> getTypeById(@PathVariable Long id) {
@@ -213,5 +219,22 @@ public class AdminController {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/api/admin/user/search")
+    public List<Utilisateur> searchByNomOrEmail(@RequestParam String keyword) {
+        return utilisateurService.searchByNomOrEmail(keyword);
+    }
+
+    // Filter by type
+    @GetMapping("/api/admin/user/filter")
+    public List<Utilisateur> filterByType(@RequestParam String type) {
+        return utilisateurService.filterByType(type);
+    }
+
+    // Search by name or email and filter by type
+    @GetMapping("/api/admin/user/search-filter")
+    public List<Utilisateur> searchByNomOrEmailAndType(@RequestParam String keyword, @RequestParam String type) {
+        return utilisateurService.searchByNomOrEmailAndType(keyword, type);
     }
 }

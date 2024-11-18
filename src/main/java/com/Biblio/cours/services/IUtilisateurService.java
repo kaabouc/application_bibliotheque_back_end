@@ -19,4 +19,8 @@ public interface IUtilisateurService {
     void deleteUtilisateur(Long id);
 
     Optional<Utilisateur> getUtilisateurByEmail(String email);
+
+    public List<Utilisateur> searchByNomOrEmail(String keyword);
+    public List<Utilisateur> filterByType(String type);
+    public List<Utilisateur> searchByNomOrEmailAndType(String keyword, String type);
 }

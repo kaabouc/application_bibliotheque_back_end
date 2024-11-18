@@ -10,11 +10,9 @@ import com.Biblio.cours.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,8 +25,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
 
 @CrossOrigin("http://localhost:3000")
 @RestController
@@ -218,6 +216,49 @@ public class AppController {
                 })
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND)); // Document not found in the database
     }
+
+    @GetMapping("/api/document/{id}/download")
+    public ResponseEntity<byte[]> downloadDocument(@PathVariable Long id) {
+        Optional<Document> documentOptional = documentService.getDocumentById(id);
+
+        if (documentOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Document document = documentOptional.get();
+
+        try {
+            String filePath = document.getFilePath();
+            Path path = Paths.get(filePath);
+
+            if (!Files.exists(path) || !Files.isRegularFile(path)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] fileContent = Files.readAllBytes(path);
+
+            String contentType = Files.probeContentType(path);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(contentType));
+            headers.setContentDisposition(
+                    ContentDisposition.attachment()
+                            .filename(path.getFileName().toString())
+                            .build()
+            );
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(fileContent);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
 
 
@@ -511,4 +552,6 @@ public class AppController {
         Commentaire commentaire = commentaireService.updateCommentaire(id, updatedCommentaire);
         return new ResponseEntity<>(commentaire, HttpStatus.OK);
     }
+
+
 }

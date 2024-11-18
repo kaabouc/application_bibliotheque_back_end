@@ -24,8 +24,8 @@ public interface IDocumentService {
     void deleteDocument(Long id);
 
     public List<Document> getDocumentsByUserId(Long userId);
-    List<Document> searchDocuments(String titre, String description, String filier, String niveaux, Long bibliothequeId, Long typeId);
 
+    List<Document> searchDocuments(String titre, String description, String filier, String niveaux, Long bibliothequeId, Long typeId);
 
 }
 
