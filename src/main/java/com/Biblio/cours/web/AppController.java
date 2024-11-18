@@ -259,8 +259,7 @@ public class AppController {
     }
 
     @PutMapping("/api/comentaire/update/{id}")
-    public ResponseEntity<Commentaire> updateCommentaire(
-            @PathVariable Long id,
+    public ResponseEntity<Commentaire> updateCommentaire(@PathVariable Long id,
             @RequestBody Commentaire updatedCommentaire) {
         Commentaire commentaire = commentaireService.updateCommentaire(id, updatedCommentaire);
         return new ResponseEntity<>(commentaire, HttpStatus.OK);
