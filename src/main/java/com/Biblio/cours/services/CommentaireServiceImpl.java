@@ -1,7 +1,5 @@
 package com.Biblio.cours.services;
 
-
-
 import com.Biblio.cours.dao.CommentaireDAO;
 import com.Biblio.cours.entities.Commentaire;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,11 +39,24 @@ public class CommentaireServiceImpl implements ICommentaireService {
     public Commentaire updateCommentaire(Long id, Commentaire updatedCommentaire) {
         return commentaireRepository.findById(id).map(commentaire -> {
             commentaire.setMessage(updatedCommentaire.getMessage());
-
             commentaire.setDocument(updatedCommentaire.getDocument());
             commentaire.setUtilisateur(updatedCommentaire.getUtilisateur());
             return commentaireRepository.save(commentaire);
         }).orElse(null);
     }
-}
 
+    @Override
+    public Optional<Commentaire> findById(Long id) {
+        return commentaireRepository.findById(id);
+    }
+
+    @Override
+    public List<Commentaire> getCommentairesByDocumentId(Long documentId) {
+        return commentaireRepository.findByDocumentId(documentId);
+    }
+
+    @Override
+    public List<Commentaire> getCommentairesByUserId(Long userId) {
+        return commentaireRepository.findByUtilisateurId(userId);
+    }
+}
