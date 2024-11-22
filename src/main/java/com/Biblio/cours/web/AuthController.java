@@ -64,6 +64,7 @@ public class AuthController {
         return ResponseEntity.ok(savedUtilisateur);
     }
 
+
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest loginRequest) throws Exception {
         try {

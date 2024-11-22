@@ -41,8 +41,6 @@ public class DocumentServiceImpl implements IDocumentService {
 
     @Override
     public Document saveDocument(Document document) {
-
-
                 // Set the file path to the document entity
 
                 document.setDislike(0);

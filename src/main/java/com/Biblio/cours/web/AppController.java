@@ -132,17 +132,11 @@ public class AppController {
             document.setLikes(likes);
             document.setId(id);
 
-
-
-
-
             // Sauvegarder les modifications du document dans la base de données
             document = documentService.UpdateDocument(document);
 
             // Retourner une réponse réussie avec le document mis à jour
             return new ResponseEntity<>(document, HttpStatus.OK);
-
-
 
     }
 
@@ -278,8 +272,6 @@ public class AppController {
                  response.setDocument(document);
 
                 // Type mapping (assuming you have a 'Type' entity and its mapping)
-
-
 
                 // Handle the file content
                 if (document.getFilePath() != null && !document.getFilePath().isEmpty()) {
@@ -521,18 +513,6 @@ public class AppController {
         return new ResponseEntity<>(types, HttpStatus.OK);
     }
 
-    @PostMapping("/api/comentaire/create")
-    public ResponseEntity<Commentaire> createCommentaire(@RequestBody Commentaire commentaire) {
-        Commentaire savedCommentaire = commentaireService.saveCommentaire(commentaire);
-        return new ResponseEntity<>(savedCommentaire, HttpStatus.CREATED);
-    }
-
-    @GetMapping("/api/comentaire/{id}")
-    public ResponseEntity<Commentaire> getCommentaireById(@PathVariable Long id) {
-        Commentaire commentaire = commentaireService.getCommentaireById(id);
-        return new ResponseEntity<>(commentaire, HttpStatus.OK);
-    }
-
     @GetMapping("/api/comentaire/all")
     public ResponseEntity<List<Commentaire>> getAllCommentaires() {
         List<Commentaire> commentaires = commentaireService.getAllCommentaires();
@@ -540,15 +520,7 @@ public class AppController {
     }
 
 
-
-    @PutMapping("/api/comentaire/update/{id}")
-    public ResponseEntity<Commentaire> updateCommentaire(@PathVariable Long id,
-            @RequestBody Commentaire updatedCommentaire) {
-        Commentaire commentaire = commentaireService.updateCommentaire(id, updatedCommentaire);
-        return new ResponseEntity<>(commentaire, HttpStatus.OK);
-    }
-
-    @PostMapping("/api/commentaire/create")
+    @PostMapping("/api/auth/commentaire/create")
     public ResponseEntity<Commentaire> createCommentaire(
             @RequestParam("message") String message,
             @RequestParam("documentId") Long documentId,
@@ -570,7 +542,7 @@ public class AppController {
         return new ResponseEntity<>(savedCommentaire, HttpStatus.CREATED);
     }
 
-    @PutMapping("/api/commentaire/update/{id}")
+    @PutMapping("/api/auth/commentaire/update/{id}")
     public ResponseEntity<Commentaire> updateCommentaire(
             @PathVariable Long id,
             @RequestParam("message") String message,
@@ -594,7 +566,7 @@ public class AppController {
         return new ResponseEntity<>(updatedCommentaire, HttpStatus.OK);
     }
 
-    @DeleteMapping("/api/commentaire/delete/{id}")
+    @DeleteMapping("/api/auth/commentaire/delete/{id}")
     public ResponseEntity<Void> deleteCommentaire(@PathVariable Long id) {
         Optional<Commentaire> commentaire = commentaireService.findById(id);
 
@@ -606,7 +578,7 @@ public class AppController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/api/commentaire/document/{documentId}")
+    @GetMapping("/api/auth/commentaire/document/{documentId}")
     public ResponseEntity<List<Commentaire>> getCommentairesByDocument(@PathVariable Long documentId) {
         List<Commentaire> commentaires = commentaireService.getCommentairesByDocumentId(documentId);
         return new ResponseEntity<>(commentaires, HttpStatus.OK);
