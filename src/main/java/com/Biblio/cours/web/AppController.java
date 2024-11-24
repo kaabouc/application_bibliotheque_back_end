@@ -174,12 +174,13 @@ public class AppController {
 
 
     //get document by id
-    @GetMapping("/api/document/{id}")
+    @GetMapping("/api/auth/document/{id}")
     public ResponseEntity<DocumentResponse> getDocumentById(@PathVariable Long id) {
         // Retrieve the document from the database
         return (ResponseEntity<DocumentResponse>) documentService.getDocumentById(id)
                 .map(document -> {
                     try {
+
                         // Retrieve the file path from the document entity
                         String filePath = document.getFilePath() ; // Assuming 'getFilePath' gives the correct file path
 
@@ -198,6 +199,7 @@ public class AppController {
 
                             // Return a response with both document data and file content
                             DocumentResponse response = new DocumentResponse(document, fileContent);
+
                             return new ResponseEntity<>(response, HttpStatus.OK);
                         } else {
                             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // File not found
@@ -405,7 +407,7 @@ public class AppController {
             @RequestParam("niveaux") String niveaux,
             @RequestParam("bibliothequeId") Long bibliothequeId,
             @RequestParam("typeId") Long typeId,
-            @RequestParam("userId") Long userId,
+           // @RequestParam("userId") Long userId,
             @RequestParam(value = "file", required = false) MultipartFile file) {
 
         System.out.println("Début de la méthode updateDocument.");
@@ -420,10 +422,10 @@ public class AppController {
         // Recherche des entités associées
         Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
         Optional<Type> type = typeDAO.findById(typeId);
-        Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
+     //   Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
         // Vérification de l'existence des entités associées
-        if (!bibliotheque.isPresent() || !type.isPresent() || !utilisateur.isPresent()) {
+        if (!bibliotheque.isPresent() || !type.isPresent() ) {
             System.out.println("Erreur: une ou plusieurs entités associées sont introuvables.");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Entités non trouvées
         }
@@ -437,7 +439,7 @@ public class AppController {
             document.setNiveaux(niveaux);
             document.setBibliotheque(bibliotheque.get());
             document.setType(type.get());
-            document.setUtilisateur(utilisateur.get());
+           // document.setUtilisateur(utilisateur.get());
 
             // Si un fichier est fourni, mettre à jour le fichier
             if (file != null && !file.isEmpty()) {
