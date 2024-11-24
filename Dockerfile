@@ -8,8 +8,14 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-# Construire le projet Maven
-RUN mvn clean package -DskipTests
+# Afficher le contenu du répertoire pour le débogage
+RUN ls -la
+
+# Construire le projet Maven avec plus de logs
+RUN mvn clean package -DskipTests -X
+
+# Afficher le contenu du répertoire target pour le débogage
+RUN ls -la target/
 
 # Étape 2 : Création de l'image exécutable
 FROM eclipse-temurin:17-jdk-alpine
@@ -18,10 +24,10 @@ FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copier le fichier JAR de l'étape de construction
-COPY --from=builder target/cours-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
 
 # Exposer le port par défaut de Spring Boot
-EXPOSE 8080
+EXPOSE 9000
 
 # Commande pour exécuter l'application
 ENTRYPOINT ["java", "-jar", "app.jar"]
