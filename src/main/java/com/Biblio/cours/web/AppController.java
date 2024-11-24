@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 
-@CrossOrigin("https://e-read-me.onrender.com")
+@CrossOrigin("*")
 @RestController
 public class AppController {
 
