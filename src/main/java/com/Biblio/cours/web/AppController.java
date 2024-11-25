@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 
-@CrossOrigin("*")
+@CrossOrigin("http://localhost:3000")
 @RestController
 public class AppController {
 
