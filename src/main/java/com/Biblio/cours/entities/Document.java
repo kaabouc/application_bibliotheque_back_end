@@ -47,7 +47,7 @@ public class Document {
 
     @ManyToOne
     @JoinColumn(name = "bibliotheque_id", nullable = false)
-    @JsonBackReference
+//    @JsonBackReference
     private Bibliotheque bibliotheque;
 
     @ManyToOne
@@ -61,7 +61,7 @@ public class Document {
     private List<Commentaire> commentaires;
     @ManyToOne
     @JoinColumn
-    @JsonIgnore
+//    @JsonIgnore
     private Utilisateur utilisateur;
 
     // Constructors, Getters, and Setters

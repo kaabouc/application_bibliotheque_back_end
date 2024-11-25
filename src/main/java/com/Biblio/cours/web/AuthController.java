@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-@CrossOrigin("http://localhost:3000")
+@CrossOrigin(origins ={"http://localhost:3000", "https://e-read-me.onrender.com"})
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
