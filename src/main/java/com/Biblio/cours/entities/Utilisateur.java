@@ -22,9 +22,10 @@ public class Utilisateur {
     private String email;
     private String type ; // Admin, Client, etc.
     private String password;
+    private String imagePath;
 
     @Lob
-    private byte[] image; // To store profile image as a blob
+    private String image; // To store profile image as a blob
 
     @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -37,7 +38,7 @@ public class Utilisateur {
     // Constructors, Getters, and Setters
     public Utilisateur() {}
 
-    public Utilisateur(String nom, String email, String type, String password, byte[] image) {
+    public Utilisateur(String nom, String email, String type, String password, String image) {
         this.nom = nom;
         this.email = email;
         this.type = type;

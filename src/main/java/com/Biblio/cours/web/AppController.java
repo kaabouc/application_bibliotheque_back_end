@@ -5,6 +5,7 @@ import com.Biblio.cours.dao.TypeDAO;
 import com.Biblio.cours.dao.UtilisateurDAO;
 import com.Biblio.cours.dto.BibliothequeDTO;
 import com.Biblio.cours.dto.DocumentResponse;
+import com.Biblio.cours.dto.UtilisateurDTO;
 import com.Biblio.cours.entities.*;
 import com.Biblio.cours.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -111,12 +113,48 @@ public class AppController {
         return dto;
     }
 
-    @GetMapping("/api/users/{email}")
-    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
-        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
-        return ResponseEntity.ok(user);
-    }
+//    @GetMapping("/api/users/{email}")
+//    public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
+//        Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
+//        return ResponseEntity.ok(user);
+//    }
 
+
+
+    @GetMapping("/api/users/{email}")
+    public ResponseEntity<UtilisateurDTO> getUtilisateurByEmail(@PathVariable String email) {
+        Optional<Utilisateur> userOptional = utilisateurService.getUtilisateurByEmail(email);
+
+        if (userOptional.isPresent()) {
+            Utilisateur utilisateur = userOptional.get();
+            String imagePath = utilisateur.getImagePath();
+
+            if (imagePath != null && !imagePath.isEmpty()) {
+                File imageFile = new File(imagePath);
+                if (imageFile.exists()) {
+                    try {
+                        byte[] imageContent = Files.readAllBytes(imageFile.toPath());
+                        String encodedImage = Base64.getEncoder().encodeToString(imageContent);
+                        utilisateur.setImage(encodedImage); // Store the Base64-encoded image
+                    } catch (IOException e) {
+                        System.out.println("Error reading image: " + e.getMessage());
+                        utilisateur.setImage(null);
+                    }
+                } else {
+                    System.out.println("Image not found: " + imagePath);
+                    utilisateur.setImage(null);
+                }
+            } else {
+                System.out.println("Invalid image path for user: " + utilisateur.getEmail());
+                utilisateur.setImage(null);
+            }
+
+            UtilisateurDTO utilisateurDTO = new UtilisateurDTO(utilisateur); // Assume UtilisateurDTO handles the necessary fields.
+            return ResponseEntity.ok(utilisateurDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     // like the document
     @PutMapping("/api/document/like/{id}")

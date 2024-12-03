@@ -7,6 +7,7 @@ import com.Biblio.cours.security.LoginRequest;
 import com.Biblio.cours.services.IUtilisateurService;
 import com.Biblio.cours.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -16,7 +17,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 
 @CrossOrigin(origins ={"http://localhost:3000", "https://e-read-me.onrender.com"})
@@ -42,27 +46,57 @@ public class AuthController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Utilisateur utilisateur) {
+    public ResponseEntity<?> registerUser(
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("image") MultipartFile image
+    ) {
         // Check if user already exists
-        if (utilisateurService.getUtilisateurByEmail(utilisateur.getEmail()).isPresent()) {
+        if (utilisateurService.getUtilisateurByEmail(email).isPresent()) {
             return ResponseEntity.badRequest().body("Error: Email is already in use!");
         }
 
-        // Encode password
-        utilisateur.setPassword(passwordEncoder.encode(utilisateur.getPassword()));
+        // Determine the destination directory path (where images will be stored)
+        String pwd = System.getProperty("user.dir");
+        System.out.println("Current directory: " + pwd);
 
-
-        // Définir le type par défaut "CLIENT"
-        String typeUtilisateur = utilisateur.getType();
-        if (typeUtilisateur == null || typeUtilisateur.isEmpty()) {
-            typeUtilisateur = "CLIENT";
+        // Ensure the folder exists, create if necessary
+        File directory = new File(pwd + "/temp");
+        if (!directory.exists()) {
+            directory.mkdirs(); // Create directory if it doesn't exist
         }
-        utilisateur.setType(typeUtilisateur);
 
+        // Create a file path and store the image in the destination folder
+        String imagePath = "/temp/" + image.getOriginalFilename();
+        File destination = new File(directory, image.getOriginalFilename());
+
+        try {
+            // Save the file to the destination folder
+            image.transferTo(destination);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving the image.");
+        }
+
+        // Set image path in the utilisateur object
+        Utilisateur utilisateur = new Utilisateur();
+        utilisateur.setEmail(email);
+        utilisateur.setPassword(passwordEncoder.encode(password));
+        utilisateur.setImagePath(pwd + imagePath);
+
+        // Set default user type "CLIENT"
+        if (utilisateur.getType() == null || utilisateur.getType().isEmpty()) {
+            utilisateur.setType("CLIENT");
+        }
+
+        // Save the user
         Utilisateur savedUtilisateur = utilisateurService.saveUtilisateur(utilisateur);
 
+        // Return the saved user
         return ResponseEntity.ok(savedUtilisateur);
     }
+
+
 
 
     @PostMapping("/login")
