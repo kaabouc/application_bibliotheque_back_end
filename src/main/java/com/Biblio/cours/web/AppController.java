@@ -33,6 +33,9 @@ import java.util.stream.Collectors;
 public class AppController {
 
     @Autowired
+    private IContcatService contcatService;
+
+    @Autowired
     private IUtilisateurService utilisateurService;
 
     @Autowired
@@ -65,6 +68,11 @@ public class AppController {
         return new ResponseEntity<>(savedUtilisateur, HttpStatus.CREATED);
     }
 
+    @PostMapping("/api/auth/contact")
+    public ResponseEntity<Contact> saveContact(@RequestBody Contact contact) {
+        Contact savedContact = contcatService.saveContcat(contact);
+        return ResponseEntity.ok(savedContact);
+    }
 
 
 
@@ -125,8 +133,6 @@ public class AppController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Document non trouvé
         }
 
-
-
             Document document = existingDocument.get();
             int likes=document.getLikes()+1;
             document.setLikes(likes);
@@ -159,10 +165,6 @@ public class AppController {
         document.setDislike(dislikes);
         document.setId(id);
 
-
-
-
-
         // Sauvegarder les modifications du document dans la base de données
         document = documentService.UpdateDocument(document);
 
@@ -172,7 +174,39 @@ public class AppController {
 
 
 
+    @GetMapping("/api/auth/document/{id}/view")
+    public ResponseEntity<byte[]> viewDocument(@PathVariable Long id) {
+        Optional<Document> documentOptional = documentService.getDocumentById(id);
 
+        if (documentOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Document document = documentOptional.get();
+
+        try {
+            String filePath = document.getFilePath();
+            Path path = Paths.get(filePath);
+
+            if (!Files.exists(path) || !Files.isRegularFile(path)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] fileContent = Files.readAllBytes(path);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.add("Content-Disposition", "inline; filename=" + path.getFileName());
+//            headers.add("X-Frame-Options", "ALLOW-FROM *"); // Autorise l'affichage dans une iframe
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(fileContent);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     //get document by id
     @GetMapping("/api/auth/document/{id}")
     public ResponseEntity<DocumentResponse> getDocumentById(@PathVariable Long id) {
@@ -222,9 +256,9 @@ public class AppController {
         }
 
         Document document = documentOptional.get();
+        String filePath = document.getFilePath();
 
         try {
-            String filePath = document.getFilePath();
             Path path = Paths.get(filePath);
 
             if (!Files.exists(path) || !Files.isRegularFile(path)) {
@@ -233,7 +267,7 @@ public class AppController {
 
             byte[] fileContent = Files.readAllBytes(path);
 
-            String contentType = Files.probeContentType(path);
+            String contentType = Files.probeContentType(path); // Détecte le type MIME du fichier
             if (contentType == null) {
                 contentType = "application/octet-stream";
             }
@@ -242,18 +276,17 @@ public class AppController {
             headers.setContentType(MediaType.parseMediaType(contentType));
             headers.setContentDisposition(
                     ContentDisposition.attachment()
-                            .filename(path.getFileName().toString())
+                            .filename(path.getFileName().toString()) // Nom du fichier d'origine
                             .build()
             );
 
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(fileContent);
+            return ResponseEntity.ok().headers(headers).body(fileContent);
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
 
 

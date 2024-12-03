@@ -20,12 +20,12 @@ public class Commentaire {
     @ManyToOne
     @JsonBackReference
     @JoinColumn(name = "document_id", nullable = false)
-    @JsonIgnore
+//    @JsonIgnore
     private Document document;
 
     @ManyToOne
     @JoinColumn(name = "utilisateur_id", nullable = false)
-    @JsonIgnore
+//    @JsonIgnore
     private Utilisateur utilisateur;
 
     // Constructors, Getters, and Setters

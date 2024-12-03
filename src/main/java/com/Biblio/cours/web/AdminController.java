@@ -3,11 +3,9 @@ package com.Biblio.cours.web;
 
 import com.Biblio.cours.dto.BibliothequeDTO;
 import com.Biblio.cours.dto.UtilisateurDTO;
-import com.Biblio.cours.entities.Bibliotheque;
-import com.Biblio.cours.entities.Document;
-import com.Biblio.cours.entities.Type;
-import com.Biblio.cours.entities.Utilisateur;
+import com.Biblio.cours.entities.*;
 import com.Biblio.cours.services.IBibliothequeService;
+import com.Biblio.cours.services.IContcatService;
 import com.Biblio.cours.services.IDocumentService;
 import com.Biblio.cours.services.ITypeService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,7 +34,26 @@ public class AdminController {
     private IDocumentService documentService;
 
     @Autowired
+    private IContcatService contcatService;
+
+    @Autowired
     private ITypeService typeService;
+
+    @GetMapping("/api/admin/contacts")
+    public ResponseEntity<List<Contact>> getAllContact() {
+        List<Contact> contacts = contcatService.getAllContcats();
+        return new ResponseEntity<>(contacts, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/api/admin/contact/{id}")
+    public ResponseEntity<Void> deleteContact(@PathVariable Long id) {
+        try {
+            contcatService.deleteContact(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @GetMapping("/api/user/test")
     public ResponseEntity<String> testSerialization() throws JsonProcessingException {
