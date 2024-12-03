@@ -19,7 +19,6 @@ public class ContactServiceImpl implements IContcatService {
     public Contact saveContcat(Contact contact) {
         return contactRepository.save(contact);
     }
-
     @Override
     public void deleteContact(Long id) {
         contactRepository.deleteById(id);

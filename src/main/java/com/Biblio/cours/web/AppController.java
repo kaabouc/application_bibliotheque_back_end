@@ -82,7 +82,7 @@ public class AppController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/api/document/search")
+    @GetMapping("/api/auth/document/search")
     public List<Document> search(
             @RequestParam(required = false) String titre,
             @RequestParam(required = false) String description,
@@ -122,7 +122,7 @@ public class AppController {
     @PutMapping("/api/document/like/{id}")
     public ResponseEntity<Document> LikeDocument(
             @PathVariable("id") Long id)
-           {
+    {
 
         System.out.println("Début de la méthode updateDocument.");
 
@@ -133,22 +133,22 @@ public class AppController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Document non trouvé
         }
 
-            Document document = existingDocument.get();
-            int likes=document.getLikes()+1;
-            document.setLikes(likes);
-            document.setId(id);
+        Document document = existingDocument.get();
+        int likes=document.getLikes()+1;
+        document.setLikes(likes);
+        document.setId(id);
 
-            // Sauvegarder les modifications du document dans la base de données
-            document = documentService.UpdateDocument(document);
+        // Sauvegarder les modifications du document dans la base de données
+        document = documentService.UpdateDocument(document);
 
-            // Retourner une réponse réussie avec le document mis à jour
-            return new ResponseEntity<>(document, HttpStatus.OK);
+        // Retourner une réponse réussie avec le document mis à jour
+        return new ResponseEntity<>(document, HttpStatus.OK);
 
     }
 
 
 
-      // dislike the document
+    // dislike the document
     @PutMapping("/api/document/dislike/{id}")
     public ResponseEntity<Document> dislikeDocument(@PathVariable Long id) {
         // Recherche du document existant
@@ -304,7 +304,7 @@ public class AppController {
             List<DocumentResponse> documentResponses = new ArrayList<>();
             for (Document document : documents) {
                 DocumentResponse response = new DocumentResponse();
-                 response.setDocument(document);
+                response.setDocument(document);
 
                 // Type mapping (assuming you have a 'Type' entity and its mapping)
 
@@ -440,7 +440,7 @@ public class AppController {
             @RequestParam("niveaux") String niveaux,
             @RequestParam("bibliothequeId") Long bibliothequeId,
             @RequestParam("typeId") Long typeId,
-           // @RequestParam("userId") Long userId,
+            // @RequestParam("userId") Long userId,
             @RequestParam(value = "file", required = false) MultipartFile file) {
 
         System.out.println("Début de la méthode updateDocument.");
@@ -455,7 +455,7 @@ public class AppController {
         // Recherche des entités associées
         Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
         Optional<Type> type = typeDAO.findById(typeId);
-     //   Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
+        //   Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
         // Vérification de l'existence des entités associées
         if (!bibliotheque.isPresent() || !type.isPresent() ) {
@@ -472,7 +472,7 @@ public class AppController {
             document.setNiveaux(niveaux);
             document.setBibliotheque(bibliotheque.get());
             document.setType(type.get());
-           // document.setUtilisateur(utilisateur.get());
+            // document.setUtilisateur(utilisateur.get());
 
             // Si un fichier est fourni, mettre à jour le fichier
             if (file != null && !file.isEmpty()) {
