@@ -3,11 +3,9 @@ package com.Biblio.cours.web;
 
 import com.Biblio.cours.dto.BibliothequeDTO;
 import com.Biblio.cours.dto.UtilisateurDTO;
-import com.Biblio.cours.entities.Bibliotheque;
-import com.Biblio.cours.entities.Document;
-import com.Biblio.cours.entities.Type;
-import com.Biblio.cours.entities.Utilisateur;
+import com.Biblio.cours.entities.*;
 import com.Biblio.cours.services.IBibliothequeService;
+import com.Biblio.cours.services.IContcatService;
 import com.Biblio.cours.services.IDocumentService;
 import com.Biblio.cours.services.ITypeService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -18,6 +16,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Base64;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -36,7 +38,26 @@ public class AdminController {
     private IDocumentService documentService;
 
     @Autowired
+    private IContcatService contcatService;
+
+    @Autowired
     private ITypeService typeService;
+
+    @GetMapping("/api/admin/contacts")
+    public ResponseEntity<List<Contact>> getAllContact() {
+        List<Contact> contacts = contcatService.getAllContcats();
+        return new ResponseEntity<>(contacts, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/api/admin/contact/{id}")
+    public ResponseEntity<Void> deleteContact(@PathVariable Long id) {
+        try {
+            contcatService.deleteContact(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @GetMapping("/api/user/test")
     public ResponseEntity<String> testSerialization() throws JsonProcessingException {
@@ -52,12 +73,50 @@ public class AdminController {
         return new ResponseEntity<>(savedUtilisateur, HttpStatus.CREATED);
     }
 
+//    @GetMapping("/api/user/{id}")
+//    public ResponseEntity<Utilisateur> getUtilisateurById(@PathVariable Long id) {
+//        Optional<Utilisateur> utilisateur = utilisateurService.getUtilisateurById(id);
+//        return utilisateur.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+//                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+//    }
+
+
     @GetMapping("/api/user/{id}")
-    public ResponseEntity<Utilisateur> getUtilisateurById(@PathVariable Long id) {
-        Optional<Utilisateur> utilisateur = utilisateurService.getUtilisateurById(id);
-        return utilisateur.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<UtilisateurDTO> getUtilisateurById(@PathVariable Long id) {
+        Optional<Utilisateur> utilisateurOptional = utilisateurService.getUtilisateurById(id);
+
+        if (utilisateurOptional.isPresent()) {
+            Utilisateur utilisateur = utilisateurOptional.get();
+            String imagePath = utilisateur.getImagePath();
+
+            if (imagePath != null && !imagePath.isEmpty()) {
+                File imageFile = new File(imagePath);
+                if (imageFile.exists()) {
+                    try {
+                        byte[] imageContent = Files.readAllBytes(imageFile.toPath());
+                        String encodedImage = Base64.getEncoder().encodeToString(imageContent);
+                        utilisateur.setImage(encodedImage); // Store Base64-encoded image
+                    } catch (IOException e) {
+                        System.out.println("Error reading image: " + e.getMessage());
+                        utilisateur.setImage(null);
+                    }
+                } else {
+                    System.out.println("Image not found: " + imagePath);
+                    utilisateur.setImage(null);
+                }
+            } else {
+                System.out.println("Invalid image path for user ID: " + id);
+                utilisateur.setImage(null);
+            }
+
+            UtilisateurDTO utilisateurDTO = new UtilisateurDTO(utilisateur); // Convert to DTO
+            return ResponseEntity.ok(utilisateurDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
+
+
 
     @PutMapping("/api/user/update/{id}")
     public ResponseEntity<Utilisateur> updateUtilisateur(@PathVariable Long id, @RequestParam(required = false) String name,
@@ -82,19 +141,50 @@ public class AdminController {
     }
 
 
-    @DeleteMapping("/api/admin/user/delete/{id}")
-    public ResponseEntity<Void> deleteUtilisateur(@PathVariable Long id) {
-        utilisateurService.deleteUtilisateur(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
     @GetMapping("/api/user/all")
     public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
         List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
                 .stream()
-                .map(UtilisateurDTO::new)
+                .map(utilisateur -> {
+                    String imagePath = utilisateur.getImagePath();
+
+                    if (imagePath != null && !imagePath.isEmpty()) {
+                        File imageFile = new File(imagePath);
+
+                        if (imageFile.exists()) {
+                            try {
+                                byte[] imageContent = Files.readAllBytes(imageFile.toPath());
+                                String encodedImage = Base64.getEncoder().encodeToString(imageContent);
+                                utilisateur.setImage(encodedImage); // Store the base64-encoded image
+                            } catch (IOException e) {
+                                System.out.println("Error reading image: " + e.getMessage());
+                                utilisateur.setImage(null);
+                            }
+                        } else {
+                            System.out.println("Image not found: " + imagePath);
+                            utilisateur.setImage(null);
+                        }
+                    } else {
+                        System.out.println("Invalid image path for user: " + utilisateur.getEmail());
+                        utilisateur.setImage(null);
+                    }
+
+                    return new UtilisateurDTO(utilisateur);
+                })
                 .collect(Collectors.toList());
+
         return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
     }
+
+
+    //    @GetMapping("/api/user/all")
+//    public ResponseEntity<List<UtilisateurDTO>> getAllUtilisateurs() {
+//        List<UtilisateurDTO> utilisateurs = utilisateurService.getAllUtilisateurs()
+//                .stream()
+//                .map(UtilisateurDTO::new)
+//                .collect(Collectors.toList());
+//        return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
+//    }
     // Create or Update Bibliotheque
     @PostMapping("/api/admin/bibliotique/save")
     public ResponseEntity<Bibliotheque> saveBibliotheque(@RequestBody Bibliotheque bibliotheque) {

@@ -2,26 +2,23 @@ package com.Biblio.cours.services;
 
 import com.Biblio.cours.dao.ContactRepository;
 import com.Biblio.cours.entities.Contact;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
 @Service
-@AllArgsConstructor
-public class ContactServiceImpl implements ContactService {
-    private final ContactRepository contactRepository;
-
+public class ContactServiceImpl implements IContcatService {
+    @Autowired
+    public ContactRepository contactRepository;
     @Override
-    public Contact saveContact(Contact contact) {
-        return contactRepository.save(contact);
-    }
-
-    @Override
-    public List<Contact> getAllContacts() {
+    public List<Contact> getAllContcats() {
         return contactRepository.findAll();
     }
 
+    @Override
+    public Contact saveContcat(Contact contact) {
+        return contactRepository.save(contact);
+    }
     @Override
     public void deleteContact(Long id) {
         contactRepository.deleteById(id);

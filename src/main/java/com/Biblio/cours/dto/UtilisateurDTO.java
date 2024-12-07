@@ -1,12 +1,17 @@
 package com.Biblio.cours.dto;
 
 import com.Biblio.cours.entities.Utilisateur;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class UtilisateurDTO {
     private Long id;
     private String nom;
     private String email;
     private String type;
+    private String imagePath;
 
     // Constructor to convert Utilisateur to UtilisateurDTO
     public UtilisateurDTO(Utilisateur utilisateur) {
@@ -14,6 +19,8 @@ public class UtilisateurDTO {
         this.nom = utilisateur.getNom();
         this.email = utilisateur.getEmail();
         this.type = utilisateur.getType();
+        this.imagePath=utilisateur.getImage();
+
     }
 
     // Getters and setters (optional)

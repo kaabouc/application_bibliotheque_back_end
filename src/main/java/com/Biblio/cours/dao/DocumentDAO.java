@@ -14,7 +14,6 @@ public interface DocumentDAO extends JpaRepository<Document, Long> {
     Document findByTitre(String titre);
     List<Document> findDocumentByUtilisateur(Utilisateur user);
 
-  
-}
 
+}
 
