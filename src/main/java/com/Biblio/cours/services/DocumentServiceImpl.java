@@ -1,28 +1,26 @@
 package com.Biblio.cours.services;
 
-
-
 import com.Biblio.cours.dao.DocumentDAO;
 import com.Biblio.cours.dao.UtilisateurDAO;
 import com.Biblio.cours.entities.Document;
-
 import com.Biblio.cours.entities.Utilisateur;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class DocumentServiceImpl implements IDocumentService {
@@ -30,36 +28,24 @@ public class DocumentServiceImpl implements IDocumentService {
     @Autowired
     private DocumentDAO documentDao;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Value("${file.upload-dir}")
     private String uploadDirectory;
 
     @Autowired
     private UtilisateurDAO utilisateurDAO;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     @Override
     public Document saveDocument(Document document) {
-                // Set the file path to the document entity
-
-                document.setDislike(0);
-                document.setLikes(0);
-
-
-
-        // Save the document entity in the database
+        document.setDislike(0);
+        document.setLikes(0);
         return documentDao.save(document);
     }
+
     @Override
     public Document UpdateDocument(Document document) {
-
-
-
-
-
-
-        // Save the document entity in the database
         return documentDao.save(document);
     }
 
@@ -69,13 +55,13 @@ public class DocumentServiceImpl implements IDocumentService {
         System.out.println("Documents retrieved from the database: " + documents);
         return documents;
     }
+
     @Override
     public List<Document> getDocumentsByUserId(Long userId) {
         Utilisateur user = utilisateurDAO.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return documentDao.findDocumentByUtilisateur(user);
     }
-
 
     @Override
     public Optional<Document> getDocumentById(Long id) {
@@ -86,7 +72,6 @@ public class DocumentServiceImpl implements IDocumentService {
     public void deleteDocument(Long id) {
         Optional<Document> document = documentDao.findById(id);
         if (document.isPresent()) {
-            // Delete the file from the directory
             try {
                 Files.deleteIfExists(Paths.get(document.get().getFilePath()));
             } catch (IOException e) {
@@ -97,26 +82,113 @@ public class DocumentServiceImpl implements IDocumentService {
     }
 
     @Override
-    public List<Document> searchDocuments(String titre, String description, String filier, String niveaux, Long bibliothequeId, Long typeId) {
-        String query = "SELECT d FROM Document d WHERE 1=1";
+    public Page<Document> searchDocuments(
+            String searchTerm,
+            String filier,
+            String niveaux,
+            Long bibliothequeId,
+            Long typeId,
+            Integer minLikes,
+            Integer maxLikes,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Boolean hasAttachments,
+            List<String> tags,
+            String sortBy,
+            String sortDirection,
+            Pageable pageable) {
 
-        if (titre != null) query += " AND d.titre LIKE :titre";
-        if (description != null) query += " AND d.description LIKE :description";
-        if (filier != null) query += " AND d.filier = :filier";
-        if (niveaux != null) query += " AND d.niveaux = :niveaux";
-        if (bibliothequeId != null) query += " AND d.bibliotheque.id = :bibliothequeId";
-        if (typeId != null) query += " AND d.type.id = :typeId";
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Document> query = cb.createQuery(Document.class);
+        Root<Document> document = query.from(Document.class);
+        List<Predicate> predicates = new ArrayList<>();
 
-        TypedQuery<Document> typedQuery = entityManager.createQuery(query, Document.class);
+        // Search term (titre or description)
+        if (searchTerm != null && !searchTerm.isEmpty()) {
+            String searchPattern = "%" + searchTerm.toLowerCase() + "%";
+            predicates.add(cb.or(
+                    cb.like(cb.lower(document.get("titre")), searchPattern),
+                    cb.like(cb.lower(document.get("description")), searchPattern)
+            ));
+        }
 
-        if (titre != null) typedQuery.setParameter("titre", "%" + titre + "%");
-        if (description != null) typedQuery.setParameter("description", "%" + description + "%");
-        if (filier != null) typedQuery.setParameter("filier", filier);
-        if (niveaux != null) typedQuery.setParameter("niveaux", niveaux);
-        if (bibliothequeId != null) typedQuery.setParameter("bibliothequeId", bibliothequeId);
-        if (typeId != null) typedQuery.setParameter("typeId", typeId);
+        // Basic filters
+        if (filier != null) predicates.add(cb.equal(document.get("filier"), filier));
+        if (niveaux != null) predicates.add(cb.equal(document.get("niveaux"), niveaux));
+        if (bibliothequeId != null) predicates.add(cb.equal(document.get("bibliotheque").get("id"), bibliothequeId));
+        if (typeId != null) predicates.add(cb.equal(document.get("type").get("id"), typeId));
 
-        return typedQuery.getResultList();
+        // Likes range
+        if (minLikes != null) predicates.add(cb.greaterThanOrEqualTo(document.get("likes"), minLikes));
+        if (maxLikes != null) predicates.add(cb.lessThanOrEqualTo(document.get("likes"), maxLikes));
+
+        // Date range
+        if (startDate != null) predicates.add(cb.greaterThanOrEqualTo(document.get("createdAt"), startDate));
+        if (endDate != null) predicates.add(cb.lessThanOrEqualTo(document.get("createdAt"), endDate));
+
+        // Has attachments
+        if (hasAttachments != null) {
+            if (hasAttachments) {
+                predicates.add(cb.isNotNull(document.get("filePath")));
+            } else {
+                predicates.add(cb.isNull(document.get("filePath")));
+            }
+        }
+
+        // Tags
+        if (tags != null && !tags.isEmpty()) {
+            predicates.add(document.get("tags").in(tags));
+        }
+
+        // Apply all predicates
+        query.where(predicates.toArray(new Predicate[0]));
+
+        // Sorting
+        if (sortBy != null && sortDirection != null) {
+            Order order = sortDirection.equalsIgnoreCase("DESC") ?
+                    cb.desc(document.get(sortBy)) :
+                    cb.asc(document.get(sortBy));
+            query.orderBy(order);
+        }
+
+        // Execute query with pagination
+        List<Document> results = entityManager.createQuery(query)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+
+        // Count total results
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Document> countRoot = countQuery.from(Document.class);
+        countQuery.select(cb.count(countRoot));
+        countQuery.where(predicates.toArray(new Predicate[0]));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        return new PageImpl<>(results, pageable, total);
+    }
+
+    @Override
+    public List<String> getAllFiliers() {
+        return entityManager.createQuery(
+                "SELECT DISTINCT d.filier FROM Document d WHERE d.filier IS NOT NULL",
+                String.class
+        ).getResultList();
+    }
+
+    @Override
+    public List<String> getAllNiveaux() {
+        return entityManager.createQuery(
+                "SELECT DISTINCT d.niveaux FROM Document d WHERE d.niveaux IS NOT NULL",
+                String.class
+        ).getResultList();
+    }
+
+    @Override
+    public List<String> getPopularTags() {
+        return entityManager.createQuery(
+                        "SELECT t.name, COUNT(d) as count FROM Document d JOIN d.tags t GROUP BY t.name ORDER BY count DESC",
+                        String.class
+                ).setMaxResults(10)
+                .getResultList();
     }
 }
-

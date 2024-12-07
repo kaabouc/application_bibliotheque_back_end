@@ -7,11 +7,15 @@ import com.Biblio.cours.dto.BibliothequeDTO;
 import com.Biblio.cours.dto.DocumentResponse;
 import com.Biblio.cours.entities.*;
 import com.Biblio.cours.services.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,15 +26,18 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-
 @CrossOrigin(origins = {"http://localhost:3000", "https://e-read-me.onrender.com"})
 @RestController
+@RequestMapping("/api")
 public class AppController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppController.class);
 
     @Autowired
     private IUtilisateurService utilisateurService;
@@ -59,33 +66,46 @@ public class AppController {
     @Value("${file.upload-dir}")
     private String DOCUMENTS_DIR;
 
-    @PostMapping("/api/user/save")
+    @PostMapping("/user/save")
     public ResponseEntity<Utilisateur> saveUtilisateur(@RequestBody Utilisateur utilisateur) {
         Utilisateur savedUtilisateur = utilisateurService.saveUtilisateur(utilisateur);
         return new ResponseEntity<>(savedUtilisateur, HttpStatus.CREATED);
     }
 
-
-
-
-    @DeleteMapping("/api/bibliotique/delete/{id}")
+    @DeleteMapping("/bibliotique/delete/{id}")
     public ResponseEntity<Void> deleteBibliotheque(@PathVariable Long id) {
         bibliothequeService.deleteBibliotheque(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/api/document/search")
-    public List<Document> search(
-            @RequestParam(required = false) String titre,
-            @RequestParam(required = false) String description,
+    @GetMapping("/document/search")
+    public ResponseEntity<Page<Document>> searchDocuments(
+            @RequestParam(required = false) String searchTerm,
             @RequestParam(required = false) String filier,
             @RequestParam(required = false) String niveaux,
             @RequestParam(required = false) Long bibliothequeId,
-            @RequestParam(required = false) Long typeId) {
-        return documentService.searchDocuments(titre, description, filier, niveaux, bibliothequeId, typeId);
+            @RequestParam(required = false) Long typeId,
+            @RequestParam(required = false) Integer minLikes,
+            @RequestParam(required = false) Integer maxLikes,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) Boolean hasAttachments,
+            @RequestParam(required = false) List<String> tags,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Document> results = documentService.searchDocuments(
+                searchTerm, filier, niveaux, bibliothequeId, typeId,
+                minLikes, maxLikes, startDate, endDate,
+                hasAttachments, tags, sortBy, sortDirection, pageable);
+
+        return ResponseEntity.ok(results);
     }
 
-    @GetMapping("/api/bibliotique/all")
+    @GetMapping("/bibliotique/all")
     public ResponseEntity<List<BibliothequeDTO>> getAllBibliotheques() {
         List<Bibliotheque> bibliotheques = bibliothequeService.getAllBibliotheques();
         List<BibliothequeDTO> dtos = bibliotheques.stream()
@@ -103,233 +123,169 @@ public class AppController {
         return dto;
     }
 
-    @GetMapping("/api/users/{email}")
+    @GetMapping("/users/{email}")
     public ResponseEntity<Optional<Utilisateur>> getUtilisateurByEmail(@PathVariable String email) {
         Optional<Utilisateur> user = utilisateurService.getUtilisateurByEmail(email);
         return ResponseEntity.ok(user);
     }
 
+    @PutMapping("/document/like/{id}")
+    public ResponseEntity<Document> LikeDocument(@PathVariable("id") Long id) {
+        logger.info("Starting like operation for document ID: {}", id);
 
-    // like the document
-    @PutMapping("/api/document/like/{id}")
-    public ResponseEntity<Document> LikeDocument(
-            @PathVariable("id") Long id)
-           {
-
-        System.out.println("Début de la méthode updateDocument.");
-
-        // Recherche du document existant
         Optional<Document> existingDocument = documentService.getDocumentById(id);
-        if (!existingDocument.isPresent()) {
-            System.out.println("Erreur: Document introuvable avec l'ID: " + id);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Document non trouvé
+        if (existingDocument.isEmpty()) {
+            logger.warn("Document not found with ID: {}", id);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-
-
-
-            Document document = existingDocument.get();
-            int likes=document.getLikes()+1;
-            document.setLikes(likes);
-            document.setId(id);
-
-            // Sauvegarder les modifications du document dans la base de données
-            document = documentService.UpdateDocument(document);
-
-            // Retourner une réponse réussie avec le document mis à jour
-            return new ResponseEntity<>(document, HttpStatus.OK);
-
-    }
-
-
-
-      // dislike the document
-    @PutMapping("/api/document/dislike/{id}")
-    public ResponseEntity<Document> dislikeDocument(@PathVariable Long id) {
-        // Recherche du document existant
-        Optional<Document> existingDocument = documentService.getDocumentById(id);
-        if (!existingDocument.isPresent()) {
-            System.out.println("Erreur: Document introuvable avec l'ID: " + id);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Document non trouvé
-        }
-
-
 
         Document document = existingDocument.get();
-        int dislikes=document.getDislike()+1;
-        document.setDislike(dislikes);
-        document.setId(id);
+        document.setLikes(document.getLikes() + 1);
 
-
-
-
-
-        // Sauvegarder les modifications du document dans la base de données
         document = documentService.UpdateDocument(document);
+        logger.info("Document liked successfully. New like count: {}", document.getLikes());
 
-        // Retourner une réponse réussie avec le document mis à jour
         return new ResponseEntity<>(document, HttpStatus.OK);
     }
 
+    @PutMapping("/document/dislike/{id}")
+    public ResponseEntity<Document> dislikeDocument(@PathVariable Long id) {
+        logger.info("Starting dislike operation for document ID: {}", id);
 
+        Optional<Document> existingDocument = documentService.getDocumentById(id);
+        if (existingDocument.isEmpty()) {
+            logger.warn("Document not found with ID: {}", id);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
 
+        Document document = existingDocument.get();
+        document.setDislike(document.getDislike() + 1);
 
-    //get document by id
-    @GetMapping("/api/auth/document/{id}")
+        document = documentService.UpdateDocument(document);
+        logger.info("Document disliked successfully. New dislike count: {}", document.getDislike());
+
+        return new ResponseEntity<>(document, HttpStatus.OK);
+    }
+
+    @GetMapping("/auth/document/{id}")
     public ResponseEntity<DocumentResponse> getDocumentById(@PathVariable Long id) {
-        // Retrieve the document from the database
         return (ResponseEntity<DocumentResponse>) documentService.getDocumentById(id)
                 .map(document -> {
                     try {
-
-                        // Retrieve the file path from the document entity
-                        String filePath = document.getFilePath() ; // Assuming 'getFilePath' gives the correct file path
-
-                        // Validate if the file path is valid
+                        String filePath = document.getFilePath();
                         if (filePath == null || filePath.isEmpty()) {
-                            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Invalid file path
+                            return ResponseEntity.badRequest().build();
                         }
 
-                        // Create the file object
                         File file = new File(filePath);
-
-                        // Check if the file exists
                         if (file.exists() && file.isFile()) {
-                            // Read the file content as a byte array
                             byte[] fileContent = Files.readAllBytes(file.toPath());
-
-                            // Return a response with both document data and file content
                             DocumentResponse response = new DocumentResponse(document, fileContent);
-
-                            return new ResponseEntity<>(response, HttpStatus.OK);
-                        } else {
-                            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // File not found
+                            return ResponseEntity.ok(response);
                         }
+                        return ResponseEntity.notFound().build();
                     } catch (IOException e) {
-                        // Log the error and return an internal server error
-                        e.printStackTrace();
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Error reading file
+                        logger.error("Error reading file for document ID: " + id, e);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
                     }
                 })
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND)); // Document not found in the database
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/api/document/{id}/download")
-    public ResponseEntity<byte[]> downloadDocument(@PathVariable Long id) {
-        Optional<Document> documentOptional = documentService.getDocumentById(id);
-
-        if (documentOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Document document = documentOptional.get();
-
+    @GetMapping("/document/{id}/download")
+    public ResponseEntity<UrlResource> downloadDocument(@PathVariable Long id) {
         try {
-            String filePath = document.getFilePath();
-            Path path = Paths.get(filePath);
-
-            if (!Files.exists(path) || !Files.isRegularFile(path)) {
+            Optional<Document> documentOpt = documentService.getDocumentById(id);
+            if (documentOpt.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
 
-            byte[] fileContent = Files.readAllBytes(path);
+            Document document = documentOpt.get();
+            Path filePath = Paths.get(document.getFilePath());
+            UrlResource resource = new UrlResource(filePath.toUri());
 
-            String contentType = Files.probeContentType(path);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = Files.probeContentType(filePath);
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION,
+                                ContentDisposition.attachment()
+                                        .filename(filePath.getFileName().toString())
+                                        .build().toString())
+                        .body(resource);
             }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            headers.setContentDisposition(
-                    ContentDisposition.attachment()
-                            .filename(path.getFileName().toString())
-                            .build()
-            );
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(fileContent);
-
+            return ResponseEntity.notFound().build();
+        } catch (MalformedURLException e) {
+            logger.error("Malformed URL for document ID: " + id, e);
+            return ResponseEntity.badRequest().build();
         } catch (IOException e) {
+            logger.error("IO error for document ID: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-
-
-
-    //get all the document
-    @GetMapping("/api/auth/document/all")
+    @GetMapping("/auth/document/all")
     public ResponseEntity<List<DocumentResponse>> getAllDocuments() {
         try {
             List<Document> documents = documentService.getAllDocuments();
-
             if (documents.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT); // No documents found
+                return ResponseEntity.noContent().build();
             }
 
             List<DocumentResponse> documentResponses = new ArrayList<>();
             for (Document document : documents) {
                 DocumentResponse response = new DocumentResponse();
-                 response.setDocument(document);
+                response.setDocument(document);
 
-                // Type mapping (assuming you have a 'Type' entity and its mapping)
-
-                // Handle the file content
                 if (document.getFilePath() != null && !document.getFilePath().isEmpty()) {
                     File file = new File(document.getFilePath());
-
                     if (file.exists()) {
-                        byte[] fileContent = Files.readAllBytes(file.toPath());
-                        response.setFileContent(fileContent); // Assuming DocumentResponse has a field for fileContent
+                        response.setFileContent(Files.readAllBytes(file.toPath()));
                     } else {
-                        System.out.println("File not found: " + document.getFilePath());
-                        response.setFileContent(null); // File not found, set to null
+                        logger.warn("File not found: {}", document.getFilePath());
+                        response.setFileContent(null);
                     }
                 } else {
-                    System.out.println("Invalid file path for document with ID: " + document.getId());
-                    response.setFileContent(null); // Invalid file path
+                    logger.warn("Invalid file path for document ID: {}", document.getId());
+                    response.setFileContent(null);
                 }
-
                 documentResponses.add(response);
             }
 
-            return new ResponseEntity<>(documentResponses, HttpStatus.OK);
+            return ResponseEntity.ok(documentResponses);
         } catch (IOException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Handle server error
+            logger.error("Error retrieving documents", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // delete document
-
-    @DeleteMapping("/api/document/delete/{id}")
-    public void deleteDocument(@PathVariable Long id) {
-        // Fetch the document by ID
-        Document document= new Document();
-        document=documentService.getDocumentById(id).get();
-
-        // Check if the file path is present
-        if (document.getFilePath() != null) {
-            try {
-                Path filePath = Paths.get(document.getFilePath());
-                if(filePath != null) {
-                    Files.deleteIfExists(filePath); // Deletes the file if it exists
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to delete file at " + document.getFilePath(), e);
+    @DeleteMapping("/document/delete/{id}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        try {
+            Optional<Document> documentOpt = documentService.getDocumentById(id);
+            if (documentOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
             }
-        } else {
-            System.out.println("No file associated with this document to delete.");
-        }
 
-        // Delete the document from the database
-        documentService.deleteDocument(id);
+            Document document = documentOpt.get();
+            if (document.getFilePath() != null) {
+                Path filePath = Paths.get(document.getFilePath());
+                Files.deleteIfExists(filePath);
+            }
+
+            documentService.deleteDocument(id);
+            return ResponseEntity.noContent().build();
+        } catch (IOException e) {
+            logger.error("Error deleting document file for ID: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-
-    //save document
-    @PostMapping("/api/auth/document")
+    @PostMapping("/auth/document")
     public ResponseEntity<Document> saveDocument(
             @RequestParam("titre") String titre,
             @RequestParam("description") String description,
@@ -340,39 +296,28 @@ public class AppController {
             @RequestParam("userId") Long userId,
             @RequestParam("file") MultipartFile file) {
 
-        System.out.println("Début de la méthode saveDocument.");
+        logger.info("Starting document save operation");
 
-        // Recherche des entités associées
-        System.out.println("Recherche des entités associées...");
         Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
         Optional<Type> type = typeDAO.findById(typeId);
         Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
-        // Vérification de l'existence des entités associées
-        if (!bibliotheque.isPresent() || !type.isPresent() || !utilisateur.isPresent()) {
-            System.out.println("Erreur: une ou plusieurs entités associées sont introuvables.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Entités non trouvées
+        if (bibliotheque.isEmpty() || type.isEmpty() || utilisateur.isEmpty()) {
+            logger.warn("One or more associated entities not found");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // Vérification si le fichier est vide
         if (file.isEmpty()) {
-            System.out.println("Erreur: le fichier est vide.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Fichier vide
+            logger.warn("Uploaded file is empty");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
         try {
-            // Déterminer le chemin du répertoire de destination
             String pwd = System.getProperty("user.dir");
-            System.out.println("Répertoire actuel: " + pwd);
-
-            // Créer le fichier de destination
             File destination = new File(pwd + "/temp/" + file.getOriginalFilename());
-
-            // Sauvegarder le fichier
             file.transferTo(destination);
-            System.out.println("Fichier transféré avec succès: " + destination.getAbsolutePath());
+            logger.info("File transferred successfully: {}", destination.getAbsolutePath());
 
-            // Si le fichier a été bien transféré, on pourrait ensuite créer et sauvegarder un Document
             Document document = new Document();
             document.setTitre(titre);
             document.setDescription(description);
@@ -381,24 +326,19 @@ public class AppController {
             document.setBibliotheque(bibliotheque.get());
             document.setType(type.get());
             document.setUtilisateur(utilisateur.get());
-            document.setFilePath(destination.getAbsolutePath()); // On peut sauvegarder le chemin du fichier ou d'autres informations
+            document.setFilePath(destination.getAbsolutePath());
 
-            // Sauvegarder le document dans la base de données
-            document = documentService.saveDocument(document);  // Assurez-vous que documentDAO est bien injecté et opérationnel
+            document = documentService.saveDocument(document);
+            logger.info("Document saved successfully with ID: {}", document.getId());
 
-            // Retourner une réponse réussie avec le document créé
             return new ResponseEntity<>(document, HttpStatus.CREATED);
-
         } catch (IOException e) {
-            System.out.println("Erreur lors du traitement du fichier: " + e.getMessage());
-            e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Erreur serveur
+            logger.error("Error processing file", e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-
-    //update document
-    @PutMapping("/api/auth/document/{id}")
+    @PutMapping("/auth/document/{id}")
     public ResponseEntity<Document> updateDocument(
             @PathVariable("id") Long id,
             @RequestParam("titre") String titre,
@@ -407,84 +347,60 @@ public class AppController {
             @RequestParam("niveaux") String niveaux,
             @RequestParam("bibliothequeId") Long bibliothequeId,
             @RequestParam("typeId") Long typeId,
-           // @RequestParam("userId") Long userId,
             @RequestParam(value = "file", required = false) MultipartFile file) {
 
-        System.out.println("Début de la méthode updateDocument.");
+        logger.info("Starting document update operation for ID: {}", id);
 
-        // Recherche du document existant
         Optional<Document> existingDocument = documentService.getDocumentById(id);
-        if (!existingDocument.isPresent()) {
-            System.out.println("Erreur: Document introuvable avec l'ID: " + id);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Document non trouvé
+        if (existingDocument.isEmpty()) {
+            logger.warn("Document not found with ID: {}", id);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        // Recherche des entités associées
         Optional<Bibliotheque> bibliotheque = bibliothequeDAO.findById(bibliothequeId);
         Optional<Type> type = typeDAO.findById(typeId);
-     //   Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
-        // Vérification de l'existence des entités associées
-        if (!bibliotheque.isPresent() || !type.isPresent() ) {
-            System.out.println("Erreur: une ou plusieurs entités associées sont introuvables.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Entités non trouvées
+        if (bibliotheque.isEmpty() || type.isEmpty()) {
+            logger.warn("One or more associated entities not found");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
         try {
             Document document = existingDocument.get();
             document.setTitre(titre);
-            document.setId(id);
             document.setDescription(description);
             document.setFilier(filier);
             document.setNiveaux(niveaux);
             document.setBibliotheque(bibliotheque.get());
             document.setType(type.get());
-           // document.setUtilisateur(utilisateur.get());
 
-            // Si un fichier est fourni, mettre à jour le fichier
             if (file != null && !file.isEmpty()) {
-                System.out.println("Mise à jour du fichier...");
-
-                // Déterminer le chemin du répertoire de destination
+                logger.info("Updating file for document ID: {}", id);
                 String pwd = System.getProperty("user.dir");
-                System.out.println("Répertoire actuel: " + pwd);
-
-                // Créer un nouveau fichier de destination
                 File destination = new File(pwd + "/temp/" + file.getOriginalFilename());
-
-                // Sauvegarder le fichier
                 file.transferTo(destination);
-                System.out.println("Fichier transféré avec succès: " + destination.getAbsolutePath());
-
-                // Mettre à jour le chemin du fichier dans le document
+                logger.info("File transferred successfully: {}", destination.getAbsolutePath());
                 document.setFilePath(destination.getAbsolutePath());
             }
 
-            // Sauvegarder les modifications du document dans la base de données
             document = documentService.UpdateDocument(document);
+            logger.info("Document updated successfully with ID: {}", document.getId());
 
-            // Retourner une réponse réussie avec le document mis à jour
             return new ResponseEntity<>(document, HttpStatus.OK);
-
         } catch (IOException e) {
-            System.out.println("Erreur lors du traitement du fichier: " + e.getMessage());
-            e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Erreur serveur
+            logger.error("Error processing file for document ID: " + id, e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-
-
-
-
-    @GetMapping("/api/document/user/{userId}")
+    @GetMapping("/document/user/{userId}")
     public ResponseEntity<List<Document>> getDocumentsByUser(@PathVariable Long userId) {
         List<Document> documents = documentService.getDocumentsByUserId(userId);
         return ResponseEntity.ok(documents);
     }
 
     @GetMapping("/uploads/documents/{idDocs}")
-    public ResponseEntity<UrlResource> downloadDocument(@PathVariable String idDocs) {
+    public ResponseEntity<UrlResource> downloadDocumentByIdDocs(@PathVariable String idDocs) {
         try {
             Path filePath = Paths.get(DOCUMENTS_DIR).resolve(idDocs).normalize();
             UrlResource resource = new UrlResource(filePath.toUri());
@@ -503,26 +419,27 @@ public class AppController {
             }
             return ResponseEntity.notFound().build();
         } catch (MalformedURLException e) {
+            logger.error("Malformed URL for document ID: " + idDocs, e);
             return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
+        } catch (IOException e) {
+            logger.error("IO error for document ID: " + idDocs, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/api/type/all")
+    @GetMapping("/type/all")
     public ResponseEntity<List<Type>> getAllTypes() {
         List<Type> types = typeService.getAllTypes();
         return new ResponseEntity<>(types, HttpStatus.OK);
     }
 
-    @GetMapping("/api/comentaire/all")
+    @GetMapping("/comentaire/all")
     public ResponseEntity<List<Commentaire>> getAllCommentaires() {
         List<Commentaire> commentaires = commentaireService.getAllCommentaires();
         return new ResponseEntity<>(commentaires, HttpStatus.OK);
     }
 
-
-    @PostMapping("/api/auth/commentaire/create")
+    @PostMapping("/auth/commentaire/create")
     public ResponseEntity<Commentaire> createCommentaire(
             @RequestParam("message") String message,
             @RequestParam("documentId") Long documentId,
@@ -531,7 +448,8 @@ public class AppController {
         Optional<Document> document = documentService.getDocumentById(documentId);
         Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
-        if (!document.isPresent() || !utilisateur.isPresent()) {
+        if (document.isEmpty() || utilisateur.isEmpty()) {
+            logger.warn("Document or user not found for comment creation");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -544,7 +462,7 @@ public class AppController {
         return new ResponseEntity<>(savedCommentaire, HttpStatus.CREATED);
     }
 
-    @PutMapping("/api/auth/commentaire/update/{id}")
+    @PutMapping("/auth/commentaire/update/{id}")
     public ResponseEntity<Commentaire> updateCommentaire(
             @PathVariable Long id,
             @RequestParam("message") String message,
@@ -555,7 +473,8 @@ public class AppController {
         Optional<Document> document = documentService.getDocumentById(documentId);
         Optional<Utilisateur> utilisateur = utilisateurDAO.findById(userId);
 
-        if (!existingCommentaire.isPresent() || !document.isPresent() || !utilisateur.isPresent()) {
+        if (existingCommentaire.isEmpty() || document.isEmpty() || utilisateur.isEmpty()) {
+            logger.warn("Comment, document, or user not found for comment update");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -568,11 +487,12 @@ public class AppController {
         return new ResponseEntity<>(updatedCommentaire, HttpStatus.OK);
     }
 
-    @DeleteMapping("/api/auth/commentaire/delete/{id}")
+    @DeleteMapping("/auth/commentaire/delete/{id}")
     public ResponseEntity<Void> deleteCommentaire(@PathVariable Long id) {
         Optional<Commentaire> commentaire = commentaireService.findById(id);
 
-        if (!commentaire.isPresent()) {
+        if (commentaire.isEmpty()) {
+            logger.warn("Comment not found for deletion, ID: {}", id);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
@@ -580,11 +500,9 @@ public class AppController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/api/auth/commentaire/document/{documentId}")
+    @GetMapping("/auth/commentaire/document/{documentId}")
     public ResponseEntity<List<Commentaire>> getCommentairesByDocument(@PathVariable Long documentId) {
         List<Commentaire> commentaires = commentaireService.getCommentairesByDocumentId(documentId);
         return new ResponseEntity<>(commentaires, HttpStatus.OK);
     }
-
-
 }
