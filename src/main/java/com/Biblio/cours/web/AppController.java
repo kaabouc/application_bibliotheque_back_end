@@ -222,6 +222,7 @@ public class AppController {
 
     @GetMapping("/api/auth/document/{id}/view")
     public ResponseEntity<byte[]> viewDocument(@PathVariable Long id) {
+        // Récupérer le document par ID
         Optional<Document> documentOptional = documentService.getDocumentById(id);
 
         if (documentOptional.isEmpty()) {
@@ -230,68 +231,118 @@ public class AppController {
 
         Document document = documentOptional.get();
 
-        try {
-            String filePath = document.getFilePath();
-            Path path = Paths.get(filePath);
-
-            if (!Files.exists(path) || !Files.isRegularFile(path)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            byte[] fileContent = Files.readAllBytes(path);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.add("Content-Disposition", "inline; filename=" + path.getFileName());
-//            headers.add("X-Frame-Options", "ALLOW-FROM *"); // Autorise l'affichage dans une iframe
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(fileContent);
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        // Vérifier si le fichier existe dans l'objet Document
+        byte[] fileContent = document.getFile(); // Contient le fichier
+        if (fileContent == null || fileContent.length == 0) {
+            return ResponseEntity.notFound().build();
         }
+
+        // Utiliser un type de contenu par défaut (PDF dans cet exemple)
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM; // Type générique
+        // Vous pouvez détecter le type si nécessaire (exemple avec un PDF par défaut)
+
+        // Définir un nom de fichier par défaut
+        String fileName = "document_" + id;
+
+        // Construire les en-têtes HTTP
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(mediaType);
+        headers.add("Content-Disposition", "inline; filename=\"" + fileName + "\"");
+
+        // Retourner le fichier
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(fileContent);
     }
-    //get document by id
-    @GetMapping("/api/auth/document/{id}")
-    public ResponseEntity<DocumentResponse> getDocumentById(@PathVariable Long id) {
-        // Retrieve the document from the database
-        return (ResponseEntity<DocumentResponse>) documentService.getDocumentById(id)
-                .map(document -> {
-                    try {
 
-                        // Retrieve the file path from the document entity
-                        String filePath = document.getFilePath() ; // Assuming 'getFilePath' gives the correct file path
+//    @GetMapping("/api/auth/document/{id}")
+//    public ResponseEntity<DocumentResponse> getDocumentById(@PathVariable Long id) {
+//        // Retrieve the document from the service
+//        Optional<Document> documentOptional = documentService.getDocumentById(id);
+//
+//        if (documentOptional.isEmpty()) {
+//            return ResponseEntity.notFound().build(); // Document not found
+//        }
+//
+//        Document document = documentOptional.get();
+//
+//        try {
+//            // Ensure that the document has a file
+//            byte[] fileContent = document.getFile();
+//            if (fileContent == null || fileContent.length == 0) {
+//                return ResponseEntity.notFound().build(); // File not found
+//            }
+//
+//            // Set the Content-Disposition header
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.setContentType(MediaType.APPLICATION_PDF); // Assuming PDF for now
+//            headers.setContentDisposition(ContentDisposition.builder("attachment")
+//                    .filename(document.getTitre() + document.getId() + ".pdf") // Filename with .pdf extension
+//                    .build());
+//
+//            // Return the file content with appropriate headers
+//            return ResponseEntity.ok()
+//                    .headers(headers)
+//                    .body(new DocumentResponse(document, fileContent));
+//
+//        } catch (Exception e) {
+//            // Log the error and provide a more detailed response
+//           e.getMessage();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
+@GetMapping("/api/auth/document/{id}/file")
+public ResponseEntity<byte[]> getDocumentFile(@PathVariable Long id) {
+    // Retrieve the document from the service
+    Optional<Document> documentOptional = documentService.getDocumentById(id);
 
-                        // Validate if the file path is valid
-                        if (filePath == null || filePath.isEmpty()) {
-                            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Invalid file path
-                        }
-
-                        // Create the file object
-                        File file = new File(filePath);
-
-                        // Check if the file exists
-                        if (file.exists() && file.isFile()) {
-                            // Read the file content as a byte array
-                            byte[] fileContent = Files.readAllBytes(file.toPath());
-
-                            // Return a response with both document data and file content
-                            DocumentResponse response = new DocumentResponse(document, fileContent);
-
-                            return new ResponseEntity<>(response, HttpStatus.OK);
-                        } else {
-                            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // File not found
-                        }
-                    } catch (IOException e) {
-                        // Log the error and return an internal server error
-                        e.printStackTrace();
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Error reading file
-                    }
-                })
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND)); // Document not found in the database
+    if (documentOptional.isEmpty()) {
+        return ResponseEntity.notFound().build(); // Document not found
     }
+
+    Document document = documentOptional.get();
+
+    try {
+        // Ensure that the document has a file
+        byte[] fileContent = document.getFile();
+        if (fileContent == null || fileContent.length == 0) {
+            return ResponseEntity.notFound().build(); // File not found
+        }
+
+        // Set the Content-Disposition header
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF); // Assuming PDF for now
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename(document.getTitre() + document.getId() + ".pdf") // Filename with .pdf extension
+                .build());
+
+        // Return the file content with appropriate headers
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(fileContent);
+
+    } catch (Exception e) {
+        // Log the error and provide a more detailed response
+        e.getMessage();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+    @GetMapping("/api/auth/document/{id}/metadata")
+    public ResponseEntity<DocumentResponse> getDocumentMetadata(@PathVariable Long id) {
+        // Retrieve the document from the service
+        Optional<Document> documentOptional = documentService.getDocumentById(id);
+
+        if (documentOptional.isEmpty()) {
+            return ResponseEntity.notFound().build(); // Document not found
+        }
+
+        Document document = documentOptional.get();
+
+        // Create a response containing only the document metadata
+        DocumentResponse response = new DocumentResponse(document);
+        return ResponseEntity.ok(response);
+    }
+
 
     @GetMapping("/api/document/{id}/download")
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long id) {
@@ -302,36 +353,31 @@ public class AppController {
         }
 
         Document document = documentOptional.get();
-        String filePath = document.getFilePath();
 
-        try {
-            Path path = Paths.get(filePath);
+        // Assuming the document has a 'file' field that holds the byte content
+        byte[] fileContent = document.getFile();
 
-            if (!Files.exists(path) || !Files.isRegularFile(path)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            byte[] fileContent = Files.readAllBytes(path);
-
-            String contentType = Files.probeContentType(path); // Détecte le type MIME du fichier
-            if (contentType == null) {
-                contentType = "application/octet-stream";
-            }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            headers.setContentDisposition(
-                    ContentDisposition.attachment()
-                            .filename(path.getFileName().toString()) // Nom du fichier d'origine
-                            .build()
-            );
-
-            return ResponseEntity.ok().headers(headers).body(fileContent);
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        if (fileContent == null || fileContent.length == 0) {
+            return ResponseEntity.notFound().build();
         }
+
+        // Set content type explicitly to application/pdf
+        String contentType = "application/pdf";
+
+        // Set file name with .pdf extension
+        String fileName = document.getTitre() + ".pdf"; // Assuming `getTitre()` returns the document title
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(contentType));
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename(fileName) // Ensure .pdf extension
+                        .build()
+        );
+
+        return ResponseEntity.ok().headers(headers).body(fileContent);
     }
+
 
 
 
@@ -384,25 +430,7 @@ public class AppController {
 
     @DeleteMapping("/api/document/delete/{id}")
     public void deleteDocument(@PathVariable Long id) {
-        // Fetch the document by ID
-        Document document= new Document();
-        document=documentService.getDocumentById(id).get();
 
-        // Check if the file path is present
-        if (document.getFilePath() != null) {
-            try {
-                Path filePath = Paths.get(document.getFilePath());
-                if(filePath != null) {
-                    Files.deleteIfExists(filePath); // Deletes the file if it exists
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to delete file at " + document.getFilePath(), e);
-            }
-        } else {
-            System.out.println("No file associated with this document to delete.");
-        }
-
-        // Delete the document from the database
         documentService.deleteDocument(id);
     }
 
@@ -440,18 +468,7 @@ public class AppController {
         }
 
         try {
-            // Déterminer le chemin du répertoire de destination
-            String pwd = System.getProperty("user.dir");
-            System.out.println("Répertoire actuel: " + pwd);
 
-            // Créer le fichier de destination
-            File destination = new File(pwd + "/temp/" + file.getOriginalFilename());
-
-            // Sauvegarder le fichier
-            file.transferTo(destination);
-            System.out.println("Fichier transféré avec succès: " + destination.getAbsolutePath());
-
-            // Si le fichier a été bien transféré, on pourrait ensuite créer et sauvegarder un Document
             Document document = new Document();
             document.setTitre(titre);
             document.setDescription(description);
@@ -460,9 +477,8 @@ public class AppController {
             document.setBibliotheque(bibliotheque.get());
             document.setType(type.get());
             document.setUtilisateur(utilisateur.get());
-            document.setFilePath(destination.getAbsolutePath()); // On peut sauvegarder le chemin du fichier ou d'autres informations
+            document.setFile(file.getBytes());
 
-            // Sauvegarder le document dans la base de données
             document = documentService.saveDocument(document);  // Assurez-vous que documentDAO est bien injecté et opérationnel
 
             // Retourner une réponse réussie avec le document créé
@@ -522,21 +538,7 @@ public class AppController {
 
             // Si un fichier est fourni, mettre à jour le fichier
             if (file != null && !file.isEmpty()) {
-                System.out.println("Mise à jour du fichier...");
-
-                // Déterminer le chemin du répertoire de destination
-                String pwd = System.getProperty("user.dir");
-                System.out.println("Répertoire actuel: " + pwd);
-
-                // Créer un nouveau fichier de destination
-                File destination = new File(pwd + "/temp/" + file.getOriginalFilename());
-
-                // Sauvegarder le fichier
-                file.transferTo(destination);
-                System.out.println("Fichier transféré avec succès: " + destination.getAbsolutePath());
-
-                // Mettre à jour le chemin du fichier dans le document
-                document.setFilePath(destination.getAbsolutePath());
+              document.setFile(file.getBytes());
             }
 
             // Sauvegarder les modifications du document dans la base de données

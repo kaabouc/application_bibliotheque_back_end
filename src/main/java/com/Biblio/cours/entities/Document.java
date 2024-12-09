@@ -45,6 +45,10 @@ public class Document {
     @Column(name = "titre")
     private String titre;
 
+    @Lob
+    private byte[] file;
+
+
     @ManyToOne
     @JoinColumn(name = "bibliotheque_id", nullable = false)
 //    @JsonBackReference
