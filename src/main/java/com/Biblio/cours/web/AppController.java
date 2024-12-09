@@ -85,14 +85,15 @@ public class AppController {
     }
 
     @GetMapping("/api/auth/document/search")
-    public List<Document> search(
+    public ResponseEntity<List<Document>> searchDocuments(
             @RequestParam(required = false) String titre,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String filier,
-            @RequestParam(required = false) String niveaux,
-            @RequestParam(required = false) Long bibliothequeId,
-            @RequestParam(required = false) Long typeId) {
-        return documentService.searchDocuments(titre, description, filier, niveaux, bibliothequeId, typeId);
+            @RequestParam(required = false) List<Long> bibliotheques,
+            @RequestParam(required = false) List<Long> types,
+            @RequestParam(required = false) List<String> filier,
+            @RequestParam(required = false) List<String> niveaux) {
+
+        List<Document> documents = documentService.searchDocuments(titre, bibliotheques, types, filier, niveaux);
+        return ResponseEntity.ok(documents);
     }
 
     @GetMapping("/api/bibliotique/all")
@@ -103,7 +104,14 @@ public class AppController {
                 .collect(Collectors.toList());
         return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
-
+    @GetMapping("/api/auth/bibliotique/all")
+    public ResponseEntity<List<BibliothequeDTO>> getAllBibliothequesForVisitor() {
+        List<Bibliotheque> bibliotheques = bibliothequeService.getAllBibliotheques();
+        List<BibliothequeDTO> dtos = bibliotheques.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(dtos, HttpStatus.OK);
+    }
     private BibliothequeDTO convertToDTO(Bibliotheque bibliotheque) {
         BibliothequeDTO dto = new BibliothequeDTO();
         dto.setId(bibliotheque.getId());
@@ -582,6 +590,11 @@ public class AppController {
 
     @GetMapping("/api/type/all")
     public ResponseEntity<List<Type>> getAllTypes() {
+        List<Type> types = typeService.getAllTypes();
+        return new ResponseEntity<>(types, HttpStatus.OK);
+    }
+    @GetMapping("/api/auth/type/all")
+    public ResponseEntity<List<Type>> getAllTypesForVisitor() {
         List<Type> types = typeService.getAllTypes();
         return new ResponseEntity<>(types, HttpStatus.OK);
     }

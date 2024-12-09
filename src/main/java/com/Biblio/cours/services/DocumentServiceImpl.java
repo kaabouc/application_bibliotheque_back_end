@@ -10,6 +10,10 @@ import com.Biblio.cours.entities.Utilisateur;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.User;
@@ -20,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,10 +58,6 @@ public class DocumentServiceImpl implements IDocumentService {
     }
     @Override
     public Document UpdateDocument(Document document) {
-
-
-
-
 
 
         // Save the document entity in the database
@@ -97,26 +98,32 @@ public class DocumentServiceImpl implements IDocumentService {
     }
 
     @Override
-    public List<Document> searchDocuments(String titre, String description, String filier, String niveaux, Long bibliothequeId, Long typeId) {
-        String query = "SELECT d FROM Document d WHERE 1=1";
+    public List<Document> searchDocuments(String titre, List<Long> bibliotheques, List<Long> types,
+                                          List<String> filier, List<String> niveaux) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Document> query = cb.createQuery(Document.class);
+        Root<Document> document = query.from(Document.class);
 
-        if (titre != null) query += " AND d.titre LIKE :titre";
-        if (description != null) query += " AND d.description LIKE :description";
-        if (filier != null) query += " AND d.filier = :filier";
-        if (niveaux != null) query += " AND d.niveaux = :niveaux";
-        if (bibliothequeId != null) query += " AND d.bibliotheque.id = :bibliothequeId";
-        if (typeId != null) query += " AND d.type.id = :typeId";
+        List<Predicate> predicates = new ArrayList<>();
 
-        TypedQuery<Document> typedQuery = entityManager.createQuery(query, Document.class);
+        if (titre != null && !titre.isEmpty()) {
+            predicates.add(cb.like(cb.lower(document.get("titre")), "%" + titre.toLowerCase() + "%"));
+        }
+        if (bibliotheques != null && !bibliotheques.isEmpty()) {
+            predicates.add(document.get("bibliotheque").get("id").in(bibliotheques));
+        }
+        if (types != null && !types.isEmpty()) {
+            predicates.add(document.get("type").get("id").in(types));
+        }
+        if (filier != null && !filier.isEmpty()) {
+            predicates.add(document.get("filier").in(filier));
+        }
+        if (niveaux != null && !niveaux.isEmpty()) {
+            predicates.add(document.get("niveaux").in(niveaux));
+        }
 
-        if (titre != null) typedQuery.setParameter("titre", "%" + titre + "%");
-        if (description != null) typedQuery.setParameter("description", "%" + description + "%");
-        if (filier != null) typedQuery.setParameter("filier", filier);
-        if (niveaux != null) typedQuery.setParameter("niveaux", niveaux);
-        if (bibliothequeId != null) typedQuery.setParameter("bibliothequeId", bibliothequeId);
-        if (typeId != null) typedQuery.setParameter("typeId", typeId);
-
-        return typedQuery.getResultList();
+        query.select(document).where(cb.and(predicates.toArray(new Predicate[0])));
+        return entityManager.createQuery(query).getResultList();
     }
 }
 

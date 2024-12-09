@@ -25,7 +25,7 @@ public interface IDocumentService {
 
     public List<Document> getDocumentsByUserId(Long userId);
 
-    List<Document> searchDocuments(String titre, String description, String filier, String niveaux, Long bibliothequeId, Long typeId);
+    List<Document> searchDocuments(String titre, List<Long> bibliotheques, List<Long> types, List<String> filier, List<String> niveaux);
 
 }
 
