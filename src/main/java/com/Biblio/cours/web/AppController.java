@@ -673,4 +673,70 @@ public ResponseEntity<byte[]> getDocumentFile(@PathVariable Long id) {
     }
 
 
+    @PutMapping("/api/user/updateProfile/{id}")
+    public ResponseEntity<?> updateProfile(
+            @PathVariable Long id,
+            @RequestParam(required = false) String nom,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) MultipartFile image) {
+
+        // Fetch the user by ID
+        Optional<Utilisateur> optionalUtilisateur = utilisateurService.getUtilisateurById(id);
+        if (!optionalUtilisateur.isPresent()) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        Utilisateur utilisateur = optionalUtilisateur.get();
+
+        // Update the name if provided
+        if (nom != null && !nom.isEmpty()) {
+            utilisateur.setNom(nom);
+        }
+
+        // Update the email if provided
+        if (email != null && !email.isEmpty()) {
+            utilisateur.setEmail(email);
+        }
+
+        // Update the profile image if provided
+        if (image != null && !image.isEmpty()) {
+            String pwd = System.getProperty("user.dir");
+            System.out.println("Current directory: " + pwd);
+
+            // Ensure the folder exists, create if necessary
+            File directory = new File(pwd + "/temp");
+            if (!directory.exists()) {
+                if (!directory.mkdirs()) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Failed to create directory for image storage.");
+                }
+            }
+
+            // Create a file path and store the image in the destination folder
+            String imagePath = "/temp/" + image.getOriginalFilename();
+            File destination = new File(directory, image.getOriginalFilename());
+
+            try {
+                // Save the file to the destination folder
+                image.transferTo(destination);
+                utilisateur.setImagePath(pwd + imagePath); // Assuming `imagePath` is a field in the `Utilisateur` entity
+            } catch (IOException e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Error saving the image: " + e.getMessage());
+            }
+        }
+
+        // Save the updated user
+        Utilisateur updatedUtilisateur = utilisateurService.saveUtilisateur(utilisateur);
+
+        // Return the updated user
+        return new ResponseEntity<>(updatedUtilisateur, HttpStatus.OK);
+    }
+
+    // Save the updated user
+
+
+
+
+
 }
