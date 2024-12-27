@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .csrf().disable()
                 .authorizeRequests()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 .and()

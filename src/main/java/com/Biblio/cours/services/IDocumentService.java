@@ -1,41 +1,31 @@
 package com.Biblio.cours.services;
 
+
+
 import com.Biblio.cours.entities.Document;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDateTime;
 
 public interface IDocumentService {
-    // Existing methods
+    // Create or Update Document
+
     Document saveDocument(Document document);
-    Document UpdateDocument(Document document);
+
+     Document UpdateDocument(Document document);
+    // Get all Documents
     List<Document> getAllDocuments();
+
+    // Get Document by ID
     Optional<Document> getDocumentById(Long id);
+
+    // Delete Document by ID
     void deleteDocument(Long id);
-    List<Document> getDocumentsByUserId(Long userId);
 
-    // Enhanced search method with additional parameters
-    Page<Document> searchDocuments(
-            String searchTerm,
-            String filier,
-            String niveaux,
-            Long bibliothequeId,
-            Long typeId,
-            Integer minLikes,
-            Integer maxLikes,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            Boolean hasAttachments,
-            List<String> tags,
-            String sortBy,
-            String sortDirection,
-            Pageable pageable);
+    public List<Document> getDocumentsByUserId(Long userId);
 
-    // Additional utility methods
-    List<String> getAllFiliers();
-    List<String> getAllNiveaux();
-    List<String> getPopularTags();
+    List<Document> searchDocuments(String titre, List<Long> bibliotheques, List<Long> types, List<String> filier, List<String> niveaux);
 
 }
+

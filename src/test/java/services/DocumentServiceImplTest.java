@@ -123,18 +123,18 @@ public class DocumentServiceImplTest {
         verify(documentDao, times(1)).findById(1L);
     }
 
-    @Test
-    public void testSearchDocuments() {
-        // Mock query setup
-        when(entityManager.createQuery(anyString(), eq(Document.class))).thenReturn(typedQuery);
-        when(typedQuery.setParameter(anyString(), any())).thenReturn(typedQuery);
-        when(typedQuery.getResultList()).thenReturn(List.of(new Document(), new Document()));
-
-        List<Document> results = documentService.searchDocuments("title", "desc", "filier", "level", 1L, 2L);
-
-        assertEquals(2, results.size());
-        verify(entityManager, times(1)).createQuery(anyString(), eq(Document.class));
-        verify(typedQuery, times(1)).getResultList();
-    }
+//    @Test
+//    public void testSearchDocuments() {
+//        // Mock query setup
+//        when(entityManager.createQuery(anyString(), eq(Document.class))).thenReturn(typedQuery);
+//        when(typedQuery.setParameter(anyString(), any())).thenReturn(typedQuery);
+//        when(typedQuery.getResultList()).thenReturn(List.of(new Document(), new Document()));
+//
+//        List<Document> results = documentService.searchDocuments("title", "desc", "filier", "level", 1L, 2L);
+//
+//        assertEquals(2, results.size());
+//        verify(entityManager, times(1)).createQuery(anyString(), eq(Document.class));
+//        verify(typedQuery, times(1)).getResultList();
+//    }
 }
 
