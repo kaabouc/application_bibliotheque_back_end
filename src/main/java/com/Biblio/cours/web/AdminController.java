@@ -315,6 +315,11 @@ public class AdminController {
     public List<Utilisateur> searchByNomOrEmail(@RequestParam String keyword) {
         return utilisateurService.searchByNomOrEmail(keyword);
     }
+    @DeleteMapping("/api/admin/user/delete/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        utilisateurService.deleteUtilisateur(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 
     // Filter by type
     @GetMapping("/api/admin/user/filter")
